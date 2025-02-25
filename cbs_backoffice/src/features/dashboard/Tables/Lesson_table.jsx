@@ -25,21 +25,22 @@ function Lesson_table() {
         fetchLessons();
     }, []);
 
-
     return (
         <div id="lesson-table" className="table-container">
             <p>Lesson table</p>
             <table>
                 <thead>
                     <tr>
-                        <th>Teacher</th>
-                        <th>Course ID</th>
                         <th>Course Name</th>
+                        <th>Lesson ID</th>
+                        <th>Title</th>
+                        <th>Description</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {lessonsList.map((lesson) => (
-                        <tr key={lesson.uuid}>
+                    {lessonsList.map((lesson, index) => (
+                        <tr key={index}>
+                            <td>{lesson.course_name}</td>
                             <td>{lesson.uuid}</td>
                             <td>{lesson.title}</td>
                             <td>{lesson.description}</td>

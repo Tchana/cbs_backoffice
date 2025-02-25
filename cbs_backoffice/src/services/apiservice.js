@@ -1,26 +1,28 @@
 const API_URL = 'http://127.0.0.1:8000';
 
-export const login = async (username, password) => {
-    const response = await fetch(`${API_URL}/login/`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',  
-        
-      },
-      body: JSON.stringify({ 
-        "email":username, 
-        "password": password }),
-      
-    });
-    if (!response.ok) {
-      throw new Error('Invalid username or password');
-    }
-    const data = await response.json();
+export const login = async (email, password) => {
+  const response = await fetch(`${API_URL}/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
 
-    // Store token in local storage
-    localStorage.setItem('authToken', data.token);
-    
-    return data;
+    },
+    body: JSON.stringify({
+      "email": email,
+      "password": password
+    }),
+
+  });
+  if (!response.ok) {
+    throw new Error('Invalid username or password');
+  }
+  const data = await response.json();
+
+  // Store token in local storage
+  localStorage.setItem('authToken', data.token);
+  console.log(data.token)
+
+  return data;
 };
 
 export const signup = async (email, password, firstname, lastname, p_image, role) => {
@@ -33,7 +35,7 @@ export const signup = async (email, password, firstname, lastname, p_image, role
   formData.append("p_image", p_image);
   formData.append("role", role);
 
-  const response = await fetch(`${API_URL}/register/`, {
+  const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     body: formData,
   });
@@ -44,35 +46,78 @@ export const signup = async (email, password, firstname, lastname, p_image, role
     throw new Error(errorText);
   }
   const data = await response.json();
-  console.log(data);  
+  console.log(data);
   return data;
 }
 
-export const courses = async() => {
-const token = localStorage.getItem('authToken');
-  const response = await fetch(`${API_URL}/getcourse/`, {
-    method: 'GET', 
-    headers:{
+export const courses = async () => {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${API_URL}/course/get`, {
+    method: 'GET',
+    headers: {
       'Content-type': 'application/json',
       'Authorization': `Token ${token}`
     }
   });
 
-  if (!response.ok){
+  if (!response.ok) {
     const errorText = await response.text();
     console.error("Error getting courses: ", errorText)
     throw new Error(errorText);
   }
+  let course_list = [] // stores courses name and their id
   const data = await response.json();
-  return data["courses"];
+  for (let i = 0; i < data.length; i++) {
+    course_list.push({
+      "id": data[i]["course_id"],
+      "name": data[i]["course_name"]
+    })
+  }
+  localStorage.setItem("course_list", JSON.stringify(course_list))
+  return data;
 };
 
 export const lessons = async (token) => {
-  const response = await fetch(`${API_URL}/getlesson/`, {
+  let course_list = JSON.parse(localStorage.getItem("course_list"))
+  if (course_list === null) {
+    await courses()
+    course_list = JSON.parse(localStorage.getItem("course_list"))
+
+  }
+  let data = []
+  for (let i = 0; i < course_list.length; i++) {
+    const response = await fetch(`${API_URL}/lesson/get/${course_list[i].id}`, {
+      method: 'GET',
+      headers: {
+        'Content-type': 'application/json',
+        'Authorization': `Token ${token}`
+
+      }
+    })
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("Error getting lesson: ", errorText)
+      throw new Error(errorText);
+    }
+    const lessons = await response.json()
+    lessons.lessons.forEach(lesson => {
+      data.push({
+        course_name: course_list[i].name,
+        uuid: lesson.id,
+        title: lesson.title,
+        description: lesson.description
+      });
+    });
+  }
+
+  return data;
+};
+
+export const Users = async () => {
+  const response = await fetch(`${API_URL}/user/`, {
     method: 'GET',
     headers: {
-      'Content-type': 'application/json',
-      'Authorization': `Token ${token}`
+      'Authorization': `Token ${localStorage.getItem('authToken')}`
     }
   });
 
@@ -83,9 +128,11 @@ export const lessons = async (token) => {
   }
   const data = await response.json();
   return data;
-};
 
-export const Users = async () => {
+}
+
+
+export const GetUserbyemail = async (Useremail) => {
   const response = await fetch(`${API_URL}/user`, {
     method: 'GET'
   });
@@ -96,6 +143,54 @@ export const Users = async () => {
     throw new Error(errorText);
   }
   const data = await response.json();
-  return data["users"];
-
+  for (let i = 0; i < data["users"].length; i++) {
+    if (data["users"][i]["email"] == Useremail) {
+      return data["users"][i]
+    }
+  }
+  return Error(`The address ${Useremail} does not exist`)
 }
+
+export const editUser = async (id, email, firstname, lastname, role, p_image = null) => {
+  const token = localStorage.getItem('authToken');
+  const formData = new FormData();
+  formData.append("email", email);
+  formData.append("firstname", firstname);
+  formData.append("lastname", lastname);
+  formData.append("role", role);
+  formData.append("p_image", p_image);
+
+
+  const response = await fetch(`${API_URL}/user/edit/${id}/`, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': `Token ${token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Error editing user: ", errorText);
+    throw new Error(errorText);
+  }
+  return await response.json();
+};
+
+export const deleteUser = async (id) => {
+  const token = localStorage.getItem('authToken');
+  const response = await fetch(`${API_URL}/user/${id}/`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Token ${token}`
+    }
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("Error deleting user: ", errorText);
+    throw new Error(errorText);
+  }
+  return { success: true };
+};
