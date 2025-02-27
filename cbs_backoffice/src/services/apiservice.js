@@ -131,42 +131,23 @@ export const Users = async () => {
 
 }
 
-
-export const GetUserbyemail = async (Useremail) => {
-  const response = await fetch(`${API_URL}/user`, {
-    method: 'GET'
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error getting lesson: ", errorText)
-    throw new Error(errorText);
-  }
-  const data = await response.json();
-  for (let i = 0; i < data["users"].length; i++) {
-    if (data["users"][i]["email"] == Useremail) {
-      return data["users"][i]
-    }
-  }
-  return Error(`The address ${Useremail} does not exist`)
-}
-
-export const editUser = async (id, email, firstname, lastname, role, p_image = null) => {
+export const editUser = async (id, email, firstname, lastname, role) => {
   const token = localStorage.getItem('authToken');
-  const formData = new FormData();
-  formData.append("email", email);
-  formData.append("firstname", firstname);
-  formData.append("lastname", lastname);
-  formData.append("role", role);
-  formData.append("p_image", p_image);
+  
 
-
-  const response = await fetch(`${API_URL}/user/edit/${id}/`, {
+  console.log(id)
+  const response = await fetch(`${API_URL}/user/edit/${id}`, {
     method: 'PATCH',
     headers: {
       'Authorization': `Token ${token}`,
+      'Content-Type': 'application/json'
     },
-    body: formData,
+    body: JSON.stringify({
+      "email": email,
+      "firstname":firstname,
+      "lastname":lastname,
+      "role":role
+    }),
   });
 
   if (!response.ok) {
@@ -179,7 +160,7 @@ export const editUser = async (id, email, firstname, lastname, role, p_image = n
 
 export const deleteUser = async (id) => {
   const token = localStorage.getItem('authToken');
-  const response = await fetch(`${API_URL}/user/${id}/`, {
+  const response = await fetch(`${API_URL}/user/${id}`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',

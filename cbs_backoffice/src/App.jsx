@@ -6,7 +6,9 @@ import Dashboard from "./features/dashboard/dashboard.jsx";
 import User_table from "./features/dashboard/Tables/User_table.jsx";
 import Lesson_table from './features/dashboard/Tables/Lesson_table.jsx';
 import Course_table from './features/dashboard/Tables/Course_table.jsx';
-import UpdateUser from "./features/dashboard/AdminFunctions/UpdateUser.jsx";
+import {User_validation} from "./features/dashboard/AdminFunctions/UpdateUser.jsx";
+import { UpdateUser } from "./features/dashboard/AdminFunctions/UpdateUser.jsx";
+import { DeleteUser } from "./features/dashboard/AdminFunctions/DeleteUsers.jsx";
 
 function Paths(){
     return (<Router>
@@ -18,7 +20,9 @@ function Paths(){
             <Route path="/dashboard/User_table" element={<User_table />} />
             <Route path='/dashboard/Course_table' element={<Course_table />} />
             <Route path='/dashboard/Lesson_table' element={<Lesson_table />} />
-            <Route path="/dashboard/Update_User" element={<UpdateUser/>} />
+            <Route path="/dashboard/User_validation" element={<User_validation/>} />
+            <Route path="/dashboard/Update_User" element={<UpdateUser/>}/>
+            <Route path="/dashboard/Delete_User" element={<DeleteUser/>}/>
         </Routes>
     </Router>);
 }
