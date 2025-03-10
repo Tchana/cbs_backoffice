@@ -114,7 +114,7 @@ export const lessons = async (token) => {
 };
 
 export const Users = async () => {
-  const response = await fetch(`${API_URL}/user/`, {
+  const response = await fetch(`${API_URL}/user`, {
     method: 'GET',
     headers: {
       'Authorization': `Token ${localStorage.getItem('authToken')}`

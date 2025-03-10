@@ -1,36 +1,39 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Navbar from "./components/Navbar.jsx";
-import LoginPage from "./features/authentication/login/login.jsx";
-import SignUp from "./features/authentication/signup/Signup.jsx";
-import Dashboard from "./features/dashboard/dashboard.jsx";
-import User_table from "./features/dashboard/Tables/User_table.jsx";
-import Lesson_table from './features/dashboard/Tables/Lesson_table.jsx';
-import Course_table from './features/dashboard/Tables/Course_table.jsx';
-import {User_validation} from "./features/dashboard/AdminFunctions/UpdateUser.jsx";
-import { UpdateUser } from "./features/dashboard/AdminFunctions/UpdateUser.jsx";
-import { DeleteUser } from "./features/dashboard/AdminFunctions/DeleteUsers.jsx";
+import { Route, Routes } from "react-router-dom";
 
-function Paths(){
-    return (<Router>
-        <Routes>
-            <Route path="/" element={<Navbar />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/dashboard/User_table" element={<User_table />} />
-            <Route path='/dashboard/Course_table' element={<Course_table />} />
-            <Route path='/dashboard/Lesson_table' element={<Lesson_table />} />
-            <Route path="/dashboard/User_validation" element={<User_validation/>} />
-            <Route path="/dashboard/Update_User" element={<UpdateUser/>}/>
-            <Route path="/dashboard/Delete_User" element={<DeleteUser/>}/>
-        </Routes>
-    </Router>);
-}
+import Sidebar from "./components/common/Sidebar";
+
+import OverviewPage from "./pages/OverviewPage";
+import ProductsPage from "./pages/ProductsPage";
+import UsersPage from "./pages/UserPage";
+import SalesPage from "./pages/SalesPage";
+import OrdersPage from "./pages/OrdersPage";
+import AnalyticsPage from "./pages/AnalyticsPage";
+import SettingsPage from "./pages/SettingsPage";
+import LoginPage from "./pages/login";
 
 function App() {
-    return(
-        <Paths />
-    );
+	return (
+		<div className='flex h-screen bg-gray-900 text-gray-100 overflow-hidden'>
+			{/* BG */}
+			<div className='fixed inset-0 z-0'>
+				<div className='absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-80' />
+				<div className='absolute inset-0 backdrop-blur-sm' />
+			</div>
+
+			<Sidebar />
+			<Routes>
+				{/* <Route path='/login' element={<LoginPage />} /> */}
+
+				<Route path='/' element={<OverviewPage />} />
+				<Route path='/users' element={<UsersPage />} />
+				<Route path='/products' element={<ProductsPage />} />
+				<Route path='/sales' element={<SalesPage />} />
+				<Route path='/orders' element={<OrdersPage />} />
+				<Route path='/analytics' element={<AnalyticsPage />} />
+				<Route path='/settings' element={<SettingsPage />} />
+			</Routes>
+		</div>
+	);
 }
 
 export default App;
