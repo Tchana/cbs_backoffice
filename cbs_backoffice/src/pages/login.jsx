@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { use } from 'react';
-import { login } from '../services/apiservice';
+import { Users } from '../services/UsersManagement';
 
 const LoginPage = () => {
   const [email, setEmail] = useState('');
@@ -8,7 +8,7 @@ const LoginPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const token = await login(email, password);
+      const token = await Users(email, password);
     } catch (error) {
       console.error('Error logging in:', error)
       // setError('Invalid username or password');

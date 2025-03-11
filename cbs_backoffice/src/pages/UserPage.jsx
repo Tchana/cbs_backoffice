@@ -4,8 +4,8 @@ import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import UsersTable from "../components/users/UserTable";
-import UsersRatioChart from "../components/users/UserDemographicsChart"; 
-import { Users } from "../services/apiservice"; // Ensure this fetches the latest users list
+import UsersRatioChart from "../components/users/UserRatioChart"; 
+import { Users } from "../services/UsersManagement"; // Ensure this fetches the latest users list
 
 const UsersPage = () => {
     const [userStats, setUserStats] = useState({

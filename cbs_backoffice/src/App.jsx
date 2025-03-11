@@ -3,13 +3,14 @@ import { Route, Routes } from "react-router-dom";
 import Sidebar from "./components/common/Sidebar";
 
 import OverviewPage from "./pages/OverviewPage";
-import ProductsPage from "./pages/ProductsPage";
+import ProductsPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
 import SalesPage from "./pages/SalesPage";
 import OrdersPage from "./pages/OrdersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
 import LoginPage from "./pages/login";
+import SignupPage from "./pages/Signup";
 
 function App() {
 	return (
@@ -22,8 +23,9 @@ function App() {
 
 			<Sidebar />
 			<Routes>
-				{/* <Route path='/login' element={<LoginPage />} /> */}
-
+				<Route path='/login' element={<LoginPage />} />
+				<Route path='/signup' element={<SignupPage />} />
+				
 				<Route path='/' element={<OverviewPage />} />
 				<Route path='/users' element={<UsersPage />} />
 				<Route path='/products' element={<ProductsPage />} />

@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
-import { Users } from "../../services/apiservice";
+import { Users } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
-import { editUser, deleteUser, signup } from "../../services/apiservice";
+import { editUser, deleteUser, signup } from "../../services/UsersManagement";
 
 export const userData = await Users() 
 const UsersTable = ({ updateUserStats }) => {
@@ -24,8 +24,8 @@ const UsersTable = ({ updateUserStats }) => {
 		setSearchTerm(term);
 
 		const filtered = userData.filter((user) => 
-			user.firstname.toLowerCase().includes(term) ||
-			user.lastname.toLowerCase().includes(term) ||
+			user.firstName.toLowerCase().includes(term) ||
+			user.lastName.toLowerCase().includes(term) ||
 			user.email.toLowerCase().includes(term) ||
 			user.role.toLowerCase().includes(term)
 		);
@@ -36,7 +36,7 @@ const UsersTable = ({ updateUserStats }) => {
 	// Start registering
 	 const handleRegistrationClick = () => {
         setRegistrationUserId(true);
-        setEditValues({ firstname: "", lastname: "", email: "", password: "", role: "teacher" });
+        setEditValues({ firstName: "", lastName: "", email: "", password: "", role: "teacher" });
     };
 
 
@@ -46,8 +46,8 @@ const UsersTable = ({ updateUserStats }) => {
             await signup(
                 editValues.email,
                 editValues.password,
-                editValues.firstname,
-                editValues.lastname,
+                editValues.firstName,
+                editValues.lastName,
                 editValues.p_image || "",
                 editValues.role
             );
@@ -65,8 +65,8 @@ const UsersTable = ({ updateUserStats }) => {
 	const handleEditClick = (user) => {
 		setEditingUserId(user.id);
 		setEditValues({
-			firstname: user.firstname,
-			lastname: user.lastname,
+			firstName: user.firstName,
+			lastName: user.lastName,
 			email: user.email,
 			role: user.role
 		});
@@ -74,7 +74,7 @@ const UsersTable = ({ updateUserStats }) => {
 
 	// Handle Input Changes
 	const handleInputChange = (e, field) => {
-		if (field=== "p_image"){
+		if (field=== "pImage"){
 			setEditValues({...editValues, [field]: e.target.files[0]})
 		}else {
 			setEditValues({ ...editValues, [field]: e.target.value });
@@ -83,7 +83,7 @@ const UsersTable = ({ updateUserStats }) => {
 
 	// Confirm Edits
 	const handleConfirmEdit = async (userId) => {
-		await editUser(userId, editValues.email, editValues.firstname, editValues.lastname, editValues.role)
+		await editUser(userId, editValues.email, editValues.firstName, editValues.lastName, editValues.role)
 		
 		const updatedUsers = await Users();
 		setFilteredUsers(updatedUsers); // Update local filtered state
@@ -110,8 +110,8 @@ const UsersTable = ({ updateUserStats }) => {
 
         // Apply the current search filter on the updated user list
         const filtered = updatedUsers.filter(user => 
-            user.firstname.toLowerCase().includes(searchTerm) ||
-            user.lastname.toLowerCase().includes(searchTerm) ||
+            user.firstName.toLowerCase().includes(searchTerm) ||
+            user.lastName.toLowerCase().includes(searchTerm) ||
             user.email.toLowerCase().includes(searchTerm) ||
             user.role.toLowerCase().includes(searchTerm)
         );
@@ -199,13 +199,13 @@ const UsersTable = ({ updateUserStats }) => {
                         type="text"
                         placeholder="First Name"
                         className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                        onChange={(e) => handleInputChange(e, "firstname")}
+                        onChange={(e) => handleInputChange(e, "firstName")}
                     />
                     <input
                         type="text"
                         placeholder="Last Name"
                         className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                        onChange={(e) => handleInputChange(e, "lastname")}
+                        onChange={(e) => handleInputChange(e, "lastName")}
                     />
                     <input
                         type="email"
@@ -266,7 +266,7 @@ const UsersTable = ({ updateUserStats }) => {
 								transition={{ duration: 0.3 }}
 								ref={editingUserId === user.id ? editRowRef : null}
 							>
-								{["firstname", "lastname", "email", "role"].map((field) => (
+								{["firstName", "lastName", "email", "role"].map((field) => (
 									<td key={field} className="px-6 py-4 whitespace-nowrap">
 										{editingUserId === user.id ? (
 											<input

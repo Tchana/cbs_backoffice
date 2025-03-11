@@ -1,18 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
-import { Users } from "../../services/apiservice";
 import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
-import { editUser, deleteUser, signup } from "../../services/apiservice";
+import { Users } from "../../services/UsersManagement";
+import { editUser, deleteUser, signup } from "../../services/UsersManagement";
+import { GetCourses } from "../../services/CourseManagement";
 
-export const userData = await Users() 
-const UsersTable = ({ updateUserStats }) => {
+export const courseData = await GetCourses() 
+const CoursesTable = ({ updateCourseStats }) => {
 	const [searchTerm, setSearchTerm] = useState("");
-	const [filteredUsers, setFilteredUsers] = useState(userData);
+	const [filteredUsers, setFilteredUsers] = useState(courseData);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageInput, setPageInput] = useState(""); // For "Go to Page"
-	const [deletingUserId, setDeletingUserId] = useState(null);
-	const [registerUserId, setRegistrationUserId] = useState(false)
-	const [editingUserId, setEditingUserId] = useState(null);
+	const [deletingCourseId, setDeletingUserId] = useState(null);
+	const [registerCourseId, setRegistrationUserId] = useState(false)
+	const [editingCourseId, setEditingUserId] = useState(null);
 	const [editValues, setEditValues] = useState({});
 	const editRowRef = useRef(null);
 	const confirmButtonRef = useRef(null);
@@ -23,20 +24,18 @@ const UsersTable = ({ updateUserStats }) => {
 		const term = e.target.value.toLowerCase();
 		setSearchTerm(term);
 
-		const filtered = userData.filter((user) => 
-			user.firstname.toLowerCase().includes(term) ||
-			user.lastname.toLowerCase().includes(term) ||
-			user.email.toLowerCase().includes(term) ||
-			user.role.toLowerCase().includes(term)
+		const filtered = courseData.filter((course) => 
+			course.course_name.toLowerCase().includes(term) ||
+			course.lastname.toLowerCase().includes(term) 
 		);
 
 		setFilteredUsers(filtered);
 		setCurrentPage(1); // Reset to first page after filtering
 	};
 	// Start registering
-	 const handleRegistrationClick = () => {
+	 const handleCourseCreationClick = () => {
         setRegistrationUserId(true);
-        setEditValues({ firstname: "", lastname: "", email: "", password: "", role: "teacher" });
+        setEditValues({ title: "", description: "", level: "", teacher: "", numberOfLessons:0 });
     };
 
 
@@ -54,7 +53,7 @@ const UsersTable = ({ updateUserStats }) => {
 
             const updatedUsers = await Users();
             setFilteredUsers(updatedUsers);
-            updateUserStats(updatedUsers);
+            updateCourseStats(updatedUsers);
             setRegistrationUserId(false);
         } catch (error) {
             console.error("Error registering user:", error);
@@ -87,7 +86,7 @@ const UsersTable = ({ updateUserStats }) => {
 		
 		const updatedUsers = await Users();
 		setFilteredUsers(updatedUsers); // Update local filtered state
-		updateUserStats(updatedUsers); // Update the stats
+		updateCourseStats(updatedUsers); // Update the stats
 		setEditingUserId(null);
 	};
 
@@ -105,8 +104,8 @@ const UsersTable = ({ updateUserStats }) => {
         const updatedUsers = await Users(); 
 
         // Update both userData (full list) and filteredUsers (search results)
-        userData.length = 0; // Clear and update userData reference
-        userData.push(...updatedUsers); // Update userData to always stay current
+        courseData.length = 0; // Clear and update userData reference
+        courseData.push(...updatedUsers); // Update userData to always stay current
 
         // Apply the current search filter on the updated user list
         const filtered = updatedUsers.filter(user => 
@@ -117,7 +116,7 @@ const UsersTable = ({ updateUserStats }) => {
         );
 
         setFilteredUsers(filtered); // Update the displayed list
-        updateUserStats(updatedUsers); // Update statistics
+        updateCourseStats(updatedUsers); // Update statistics
 
     } catch (error) {
         console.error("Error deleting user:", error);
@@ -128,9 +127,9 @@ const UsersTable = ({ updateUserStats }) => {
 
 
 	// Compute paginated users
-	const indexOfLastUser = currentPage * usersPerPage;
-	const indexOfFirstUser = indexOfLastUser - usersPerPage;
-	const paginatedUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+	const indexOfLastCourse = currentPage * usersPerPage;
+	const indexOfFirstCourse = indexOfLastCourse - usersPerPage;
+	const paginatedCourse = filteredUsers.slice(indexOfFirstCourse, indexOfLastCourse);
 
 	// Pagination Controls
 	const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
@@ -179,15 +178,15 @@ const UsersTable = ({ updateUserStats }) => {
 					/>
 					<Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
 				</div>
-				{!registerUserId && (
-                    <button onClick={handleRegistrationClick} className="text-indigo-400 hover:text-indigo-300">
+				{!registerCourseId && (
+                    <button onClick={handleCourseCreationClick} className="text-indigo-400 hover:text-indigo-300">
                         <Plus size={30} />
                     </button>
                 )}
             </div>
 
             {/* Registration Form */}
-            {registerUserId && (
+            {registerCourseId && (
                 <div className="bg-gray-700 p-4 rounded-md">
 					<button 
 						className="absolute top-10 right-9 text-red-500 hover:text-red-700"
@@ -249,7 +248,7 @@ const UsersTable = ({ updateUserStats }) => {
 				<table className="min-w-full divide-y divide-gray-700">
 					<thead>
 						<tr>
-							{["First Name", "Last Name", "Email", "Role", "Actions"].map((heading) => (
+							{["Title", "Description", "Level", "Teacher", "N° of Lessons", "Action"].map((heading) => (
 								<th key={heading} className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">
 									{heading}
 								</th>
@@ -258,41 +257,65 @@ const UsersTable = ({ updateUserStats }) => {
 					</thead>
 
 					<tbody className="divide-y divide-gray-700">
-						{paginatedUsers.map((user) => (
+						{paginatedCourse.map((course) => (
 							<motion.tr
-								key={user.id}
+								key={course.id}
 								initial={{ opacity: 0 }}
 								animate={{ opacity: 1 }}
 								transition={{ duration: 0.3 }}
-								ref={editingUserId === user.id ? editRowRef : null}
+								ref={editingCourseId === course.id ? editRowRef : null}
 							>
-								{["firstname", "lastname", "email", "role"].map((field) => (
+								{["title", "description", "level", "teacher", "lessons"].map((field) => (
 									<td key={field} className="px-6 py-4 whitespace-nowrap">
-										{editingUserId === user.id ? (
+										{editingCourseId === course.id ? (
+											field === "teacher"? (
 											<input
 												type="text"
-												defaultValue={user[field]}
+												defaultValue={course[field]}
+												onChange={(e) => handleInputChange(e, firstName)}
+												className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
+											/>):
+											( field === "lessons"? (
+												<input
+												type="text"
+												defaultValue={course[field].length}
 												onChange={(e) => handleInputChange(e, field)}
 												className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
-											/>
+												/>
+											): (
+												<input
+												type="text"
+												defaultValue={course[field]}
+												onChange={(e) => handleInputChange(e, field)}
+												className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
+												/>
+											)
+											)
+											
+										) : field === "teacher" ? (
+											<div className="text-sm font-medium text-gray-100">{course[field].firstName}</div>
 										) : (
-											<div className="text-sm font-medium text-gray-100">{user[field]}</div>
+											field === "lessons"? (
+												<div className="text-sm font-medium text-gray-100">{course[field].length}</div>
+											):(
+												<div className="text-sm font-medium text-gray-100">{course[field]}</div>
+											)
 										)}
 									</td>
 								))}
 								<td className="px-6 py-4 text-sm text-gray-300">
-									{editingUserId === user.id ? (
+									{editingCourseId === course.id ? (
 										<button
-											onClick={() => handleConfirmEdit(user.id)}
+											onClick={() => handleConfirmEdit(course.id)}
 											ref={confirmButtonRef}
-											className="text-green-400 hover:text-green-300"
+											className="text-green-400 hover:text-green-300" 
 										>
 											<Check size={18} />
 										</button>
 									) : (
-										deletingUserId === user.id? (
+										deletingCourseId === course.id? (
 											<button
-												onClick={() => handleConfirmDelete(user.id)}
+												onClick={() => handleConfirmDelete(course.id)}
 												ref={confirmButtonRef}
 												className="text-green-400 hover:text-green-300"
 										>
@@ -300,15 +323,14 @@ const UsersTable = ({ updateUserStats }) => {
 											</button>
 										): (
 											<>
-												<button onClick={() => handleEditClick(user)} className="text-indigo-400 hover:text-indigo-300 mr-2">
+												<button onClick={() => handleEditClick(course)} className="text-indigo-400 hover:text-indigo-300 mr-2">
 													<Edit size={18} />
 												</button>
-												<button onClick={() => handleDeleteClick(user)} className="text-red-400 hover:text-red-300">
+												<button onClick={() => handleDeleteClick(course)} className="text-red-400 hover:text-red-300">
 													<Trash2 size={18} />
 												</button>
 											</>
 										)
-										
 									)}
 								</td>
 							</motion.tr>
@@ -364,4 +386,4 @@ const UsersTable = ({ updateUserStats }) => {
 	);
 };
 
-export default UsersTable;
+export default CoursesTable;

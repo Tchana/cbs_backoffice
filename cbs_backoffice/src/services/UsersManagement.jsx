@@ -20,7 +20,6 @@ export const login = async (email, password) => {
 
   // Store token in local storage
   localStorage.setItem('authToken', data.token);
-  console.log(data.token)
 
   return data;
 };
@@ -135,7 +134,6 @@ export const editUser = async (id, email, firstname, lastname, role) => {
   const token = localStorage.getItem('authToken');
   
 
-  console.log(id)
   const response = await fetch(`${API_URL}/user/edit/${id}`, {
     method: 'PATCH',
     headers: {
@@ -175,3 +173,4 @@ export const deleteUser = async (id) => {
   }
   return { success: true };
 };
+
