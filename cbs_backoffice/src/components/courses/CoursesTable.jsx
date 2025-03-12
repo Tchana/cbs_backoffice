@@ -36,7 +36,7 @@ const CoursesTable = ({ updateCourseStats }) => {
         course.level.toLowerCase().includes(term) ||
         `${course.teacher.firstName.toLowerCase()} ${course.teacher.lastName.toLowerCase()}`.includes(
           term
-        ) 
+        )
     );
 
     setFilteredCourses(filtered);

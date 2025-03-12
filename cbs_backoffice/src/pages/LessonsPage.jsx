@@ -1,35 +1,35 @@
 import { useState, useEffect } from "react";
-import { BookIcon } from "lucide-react";
+import { BookIcon, BookOpenText, BookOpenTextIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
-import CoursesTable from "../components/courses/CoursesTable";
+import LessonsTable from "../components/sales/LessonsTable";
 import { GetCourses } from "../services/CourseManagement";
 
-const CoursesPage = () => {
-  const [courseStats, setCourseStats] = useState({ totalCourses: 0 });
+const LessonsPage = () => {
+  const [LessonsStats, setLessonsStats] = useState({ totalLessons: 0 });
 
   // Function to update stats
-  const updateCourseStats = (courses) => {
-    setCourseStats({ totalCourses: courses.length });
+  const updateLessonsStats = (lessons) => {
+    setLessonsStats({ totalLessons: lessons.length });
   };
 
   // Fetch courses initially
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchLessons = async () => {
       try {
-        const courses = await GetCourses();
-        updateCourseStats(courses);
+        const lessons = await GetCourses();
+        updateLessonsStats(lessons);
       } catch (error) {
         console.error("Error fetching courses:", error);
       }
     };
-    fetchCourses();
+    fetchLessons();
   }, []);
 
   return (
     <div className="flex-1 overflow-auto relative z-10">
-      <Header title="Courses" />
+      <Header title="Lessons" />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
         {/* STATS */}
@@ -39,20 +39,20 @@ const CoursesPage = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 1 }}
         >
-          {courseStats.totalCourses > 0 && (
+          {LessonsStats.totalLessons > 0 && (
             <StatCard
-              name="Total Courses"
-              icon={BookIcon}
-              value={courseStats.totalCourses.toLocaleString()}
+              name="Total Lessons"
+              icon={BookOpenText}
+              value={LessonsStats.totalLessons.toLocaleString()}
               color="#6366F1"
             />
           )}
         </motion.div>
 
-        <CoursesTable updateCourseStats={updateCourseStats} />
+        <LessonsTable updateLessonsStats={updateLessonsStats} />
       </main>
     </div>
   );
 };
 
-export default CoursesPage;
+export default LessonsPage;
