@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
 import { Users } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
-import { editUser, deleteUser, signup } from "../../services/UsersManagement";
+import { editUser, deleteUser } from "../../services/UsersManagement";
+import { signup } from "../../services/AuthenticationManagement";
 
 export const userData = await Users() 
 const UsersTable = ({ updateUserStats }) => {

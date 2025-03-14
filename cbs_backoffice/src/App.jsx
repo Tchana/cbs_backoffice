@@ -1,4 +1,5 @@
-import { Route, Routes } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Route, Routes, useNavigate } from "react-router-dom";
 
 import Sidebar from "./components/common/Sidebar";
 
@@ -9,13 +10,27 @@ import LessonsPage from "./pages/LessonsPage";
 import OrdersPage from "./pages/OrdersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
-import LoginPage from "./pages/login";
 import SignupPage from "./pages/Signup";
+import AuthPage from "./components/authentication/LoginSignup";
 
 function App() {
-  return (
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    // Ensure auth is set in localStorage and retrieve its value
+    const authStatus = JSON.parse(localStorage.getItem("auth") || "false");
+    setIsAuthenticated(authStatus);
+
+    // Redirect to login if not authenticated
+    if (!authStatus) {
+      navigate("/login");
+    }
+  }, []);
+
+  return isAuthenticated ? (
     <div className="flex h-screen bg-gray-900 text-gray-100 overflow-hidden">
-      {/* BG */}
+      {/* Background */}
       <div className="fixed inset-0 z-0">
         <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 opacity-80" />
         <div className="absolute inset-0 backdrop-blur-sm" />
@@ -23,18 +38,19 @@ function App() {
 
       <Sidebar />
       <Routes>
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-
         <Route path="/" element={<OverviewPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/course" element={<CoursesPage />} />
-        <Route path="/sales" element={<LessonsPage />} />
+        <Route path="/lessons" element={<LessonsPage />} />
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
     </div>
+  ) : (
+    <Routes>
+      <Route path="/login" element={<AuthPage />} />
+    </Routes>
   );
 }
 
