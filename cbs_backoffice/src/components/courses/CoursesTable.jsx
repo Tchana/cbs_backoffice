@@ -9,10 +9,10 @@ import {
   editCourse,
 } from "../../services/CourseManagement";
 
-export const courseData = await GetCourses();
-const allTeachers = (await Users()).filter((user) => user.role === "teacher");
+const CoursesTable = async ({ updateCourseStats }) => {
+  const courseData = await GetCourses();
+  const allTeachers = (await Users()).filter((user) => user.role === "teacher");
 
-const CoursesTable = ({ updateCourseStats }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredCourses, setFilteredCourses] = useState(courseData);
   const [currentPage, setCurrentPage] = useState(1);

@@ -4,9 +4,9 @@ import { Route, Routes, useNavigate } from "react-router-dom";
 import Sidebar from "./components/common/Sidebar";
 
 import OverviewPage from "./pages/OverviewPage";
-import CoursesPage from "./pages/CoursesPage";
+// import CoursesPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
-import LessonsPage from "./pages/LessonsPage";
+// import LessonsPage from "./pages/LessonsPage";
 import OrdersPage from "./pages/OrdersPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -38,10 +38,10 @@ function App() {
 
       <Sidebar />
       <Routes>
-        <Route path="/" element={<OverviewPage />} />
+        <Route path="/overview" element={<OverviewPage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/course" element={<CoursesPage />} />
-        <Route path="/lessons" element={<LessonsPage />} />
+        {/* <Route path="/course" element={<CoursesPage />} /> */}
+        {/* <Route path="/lessons" element={<LessonsPage />} /> */}
         <Route path="/orders" element={<OrdersPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
@@ -49,6 +49,7 @@ function App() {
     </div>
   ) : (
     <Routes>
+      <Route path="/" element={<AuthPage />} />
       <Route path="/login" element={<AuthPage />} />
     </Routes>
   );

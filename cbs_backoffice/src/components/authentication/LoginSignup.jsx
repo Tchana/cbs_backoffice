@@ -4,10 +4,8 @@ import { login } from "../../services/AuthenticationManagement";
 import { useNavigate } from "react-router-dom";
 import { signup } from "../../services/AuthenticationManagement";
 
-const navigate = useNavigate();
-
-function App() {
-  localStorage.setItem("auth", false);
+function AuthPage() {
+  const navigate = useNavigate();
   const [signIn, toggle] = React.useState(true);
 
   const [email, setEmail] = React.useState("");
@@ -21,9 +19,9 @@ function App() {
     e.preventDefault();
     try {
       await login(email, password);
-      localStorage.setItem("auth", "true");
-      navigate(0);
-      navigate("/users");
+      localStorage.setItem("auth", true);
+      // navigate(0);
+      navigate("/overview");
     } catch (error) {
       console.error("Error logging in:", error);
     }
@@ -148,4 +146,4 @@ function App() {
   );
 }
 
-export default App;
+export default AuthPage;

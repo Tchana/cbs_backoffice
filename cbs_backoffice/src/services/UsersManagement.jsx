@@ -30,7 +30,7 @@ export const courses = async () => {
 export const lessons = async (token) => {
   let course_list = JSON.parse(localStorage.getItem("course_list"));
   if (course_list === null) {
-    await courses();
+    // await courses();
     course_list = JSON.parse(localStorage.getItem("course_list"));
   }
   let data = [];

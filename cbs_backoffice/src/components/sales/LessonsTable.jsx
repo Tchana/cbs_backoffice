@@ -2,16 +2,16 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
 import { Users } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
-import { editUser, deleteUser} from "../../services/UsersManagement";
+import { editUser, deleteUser } from "../../services/UsersManagement";
 import { CreateLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 
-export const userData = await Users();
-const allCourses = await GetCourses();
+const LessonsTable = async ({ updateLessonsStats }) => {
+  const userData = await Users();
+  const allCourses = await GetCourses();
 
-const courseDropDown = [{title:"Select a Course", id:0}, ...allCourses];
+  const courseDropDown = [{ title: "Select a Course", id: 0 }, ...allCourses];
 
-const LessonsTable = ({ updateLessonsStats }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredLessons] = useState(userData);
   const [currentPage, setCurrentPage] = useState(1);
@@ -223,7 +223,10 @@ const LessonsTable = ({ updateLessonsStats }) => {
               const selectedCourse = allCourses.find(
                 (course) => course.title === e.target.value
               );
-              setSelectedValues({ ...selectedValues, course: selectedCourse.id});
+              setSelectedValues({
+                ...selectedValues,
+                course: selectedCourse.id,
+              });
             }}
             className="block w-full p-2 rounded-md bg-gray-800 text-white"
           >
