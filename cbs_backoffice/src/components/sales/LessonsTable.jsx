@@ -2,16 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
 import { Users } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
-import { editUser, deleteUser, signup } from "../../services/UsersManagement";
+import { editUser, deleteUser} from "../../services/UsersManagement";
 import { CreateLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 
 export const userData = await Users();
 const allCourses = await GetCourses();
-console.log(allCourses);
 
 const courseDropDown = [{title:"Select a Course", id:0}, ...allCourses];
-console.log(courseDropDown);
 
 const LessonsTable = ({ updateLessonsStats }) => {
   const [searchTerm, setSearchTerm] = useState("");
@@ -222,11 +220,9 @@ const LessonsTable = ({ updateLessonsStats }) => {
           <select
             value={selectedValues.course}
             onChange={(e) => {
-              console.log("Lesson TAble course ",e.target.value)
               const selectedCourse = allCourses.find(
                 (course) => course.title === e.target.value
               );
-              console.log(selectedCourse)
               setSelectedValues({ ...selectedValues, course: selectedCourse.id});
             }}
             className="block w-full p-2 rounded-md bg-gray-800 text-white"
