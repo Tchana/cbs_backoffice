@@ -7,7 +7,6 @@ import { signup } from "../../services/AuthenticationManagement";
 
 const UsersTable = ({ updateUserStats }) => {
   const [usersList, setUsersList] = useState([]);
-
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState(usersList);
   const [currentPage, setCurrentPage] = useState(1);
@@ -181,7 +180,6 @@ const UsersTable = ({ updateUserStats }) => {
 
   useEffect(() => {
     fetchUsers();
-    console.log("Users fetched", usersList);
   }, [searchTerm]);
 
   return (

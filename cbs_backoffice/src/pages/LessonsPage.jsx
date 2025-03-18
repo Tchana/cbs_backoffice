@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { BookIcon, BookOpenText, BookOpenTextIcon } from "lucide-react";
+import { BookOpenText, BookOpenTextIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
-import LessonsTable from "../components/sales/LessonsTable";
+import LessonsTable from "../components/lessons/LessonsTable";
 import { GetCourses } from "../services/CourseManagement";
 
 const LessonsPage = () => {
@@ -49,7 +49,7 @@ const LessonsPage = () => {
           )}
         </motion.div>
 
-        <LessonsTable updateLessonsStats={updateLessonsStats} />
+        <LessonsTable updateLessonsStats={LessonsStats} />
       </main>
     </div>
   );

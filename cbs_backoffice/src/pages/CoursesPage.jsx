@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import CoursesTable from "../components/courses/CoursesTable";
-// import { GetCourses } from "../services/CourseManagement";
+import { GetCourses } from "../services/CourseManagement";
 
 const CoursesPage = () => {
   const [courseStats, setCourseStats] = useState({ totalCourses: 0 });
@@ -18,7 +18,7 @@ const CoursesPage = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        // const courses = await GetCourses();
+        const courses = await GetCourses();
         updateCourseStats(courses);
       } catch (error) {
         console.error("Error fetching courses:", error);

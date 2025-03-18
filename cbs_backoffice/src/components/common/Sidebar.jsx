@@ -7,10 +7,10 @@ const SIDEBAR_ITEMS = [
 	{ name: "Overview",icon: BarChart2,color: "#6366f1",href: "/overview",},
 	{ name: "Users", icon: Users, color: "#EC4899", href: "/users" },
 	{ name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
-	{ name: "Lessons", icon: BookOpen, color: "#10B981", href: "/lessons" },
+	// { name: "Lessons", icon: BookOpen, color: "#10B981", href: "/lessons" },
 	{ name: "Orders", icon: ShoppingCart, color: "#F59E0B", href: "/orders" },
-	{ name: "Analytics", icon: TrendingUp, color: "#3B82F6", href: "/analytics" },
-	{ name: "Settings", icon: Settings, color: "#6EE7B7", href: "/settings" },
+	// { name: "Analytics", icon: TrendingUp, color: "#3B82F6", href: "/analytics" },
+	// { name: "Settings", icon: Settings, color: "#6EE7B7", href: "/settings" },
 ];
 
 const Sidebar = () => {

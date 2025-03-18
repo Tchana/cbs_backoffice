@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
-import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
+import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
 import { editUser, Users } from "../../services/UsersManagement";
 import {
   GetCourses,
@@ -9,12 +9,11 @@ import {
   editCourse,
 } from "../../services/CourseManagement";
 
-const CoursesTable = async ({ updateCourseStats }) => {
-  const courseData = await GetCourses();
-  const allTeachers = (await Users()).filter((user) => user.role === "teacher");
-
+const CoursesTable = ({ updateCourseStats }) => {
+  const [allTeachers, setAllTeachers] = useState([]);
+  const [courseList, setCourseList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredCourses, setFilteredCourses] = useState(courseData);
+  const [filteredCourses, setFilteredCourses] = useState(courseList);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState(""); // For "Go to Page"
   const [deletingCourseId, setDeletingCourseId] = useState(null);
@@ -23,25 +22,41 @@ const CoursesTable = async ({ updateCourseStats }) => {
   const [editValues, setEditValues] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
-  const usersPerPage = 5;
+  const coursesPerPage = 5;
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const courses = await GetCourses();
+      setCourseList(courses);
+      setFilteredCourses(courses); // Ensure filteredCourses is updated
+    };
+    fetchData();
+  }, []);
 
   // ** Search Functionality **
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredCourses(courseList);
+    } else {
+      const filtered = courseList.filter(
+        (course) =>
+          course.title.toLowerCase().includes(searchTerm) ||
+          course.description.toLowerCase().includes(searchTerm) ||
+          course.level.toLowerCase().includes(searchTerm) ||
+          `${course.teacher.firstName} ${course.teacher.lastName}`
+            .toLowerCase()
+            .includes(searchTerm) // Fix object reference
+      );
+
+      setFilteredCourses(filtered);
+    }
+  }, [searchTerm, courseList]);
+
   const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-
-    const filtered = courseData.filter(
-      (course) =>
-        course.title.toLowerCase().includes(term) ||
-        course.level.toLowerCase().includes(term) ||
-        `${course.teacher.firstName.toLowerCase()} ${course.teacher.lastName.toLowerCase()}`.includes(
-          term
-        )
-    );
-
-    setFilteredCourses(filtered);
-    setCurrentPage(1); // Reset to first page after filtering
+    setSearchTerm(e.target.value.toLowerCase());
+    setCurrentPage(1); //Reset to first page after search
   };
+
   // Start registering
   const handleCourseCreationClick = () => {
     setRegistrationUserId(true);
@@ -130,8 +145,8 @@ const CoursesTable = async ({ updateCourseStats }) => {
       const updatedCourses = await GetCourses();
 
       // Update both userData (full list) and filteredUsers (search results)
-      courseData.length = 0; // Clear and update userData reference
-      courseData.push(...updatedCourses); // Update userData to always stay current
+      usersList.length = 0; // Clear and update userData reference
+      usersList.push(...updatedUsers); // Update userData to always stay current
 
       // Apply the current search filter on the updated user list
       const filtered = updatedCourses.filter(
@@ -152,15 +167,15 @@ const CoursesTable = async ({ updateCourseStats }) => {
   };
 
   // Compute paginated users
-  const indexOfLastCourse = currentPage * usersPerPage;
-  const indexOfFirstCourse = indexOfLastCourse - usersPerPage;
-  const paginatedCourse = filteredCourses.slice(
-    indexOfFirstCourse,
-    indexOfLastCourse
-  );
+  const indexOfLastCourse = currentPage * coursesPerPage;
+  const indexOfFirstCourse = indexOfLastCourse - coursesPerPage;
+  const paginatedCourse = searchTerm
+    ? filteredCourses.slice(indexOfFirstCourse, indexOfLastCourse)
+    : courseList.slice(indexOfFirstCourse, indexOfLastCourse);
 
   // Pagination Controls
-  const totalPages = Math.ceil(filteredCourses.length / usersPerPage);
+    const totalPages = Math.ceil(filteredCourses.length / coursesPerPage);
+
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -187,7 +202,14 @@ const CoursesTable = async ({ updateCourseStats }) => {
     setPageInput("");
   };
 
-  // get the various teachers
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      const users = await Users(); // Fetch all users
+      const teachers = users.filter((user) => user.role === "teacher"); // Filter teachers
+      setAllTeachers(teachers);
+    };
+    fetchTeachers();
+  }, [searchTerm]);
 
   return (
     <motion.div
@@ -273,7 +295,7 @@ const CoursesTable = async ({ updateCourseStats }) => {
                 "Level",
                 "Teacher's Name",
                 "N° of Lessons",
-                "Action",
+                "Actions",
               ].map((heading) => (
                 <th
                   key={heading}
@@ -365,6 +387,9 @@ const CoursesTable = async ({ updateCourseStats }) => {
                     </button>
                   ) : (
                     <>
+                      <button>
+                        <Eye size={18} />
+                      </button>
                       <button
                         onClick={() => handleEditClick(course)}
                         className="text-indigo-400 hover:text-indigo-300 mr-2"

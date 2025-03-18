@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { signup } from "../../services/AuthenticationManagement";
 
 function AuthPage() {
+  localStorage.setItem("auth",false)
   const navigate = useNavigate();
   const [signIn, toggle] = React.useState(true);
 
@@ -18,10 +19,13 @@ function AuthPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      await login(email, password);
-      localStorage.setItem("auth", true);
-      // navigate(0);
-      navigate("/overview");
+      await login(email, password).then((data) => {
+        localStorage.setItem("authToken", data.token);
+        localStorage.setItem("auth", true);
+        navigate("/overview");
+      });
+
+      navigate(0);
     } catch (error) {
       console.error("Error logging in:", error);
     }

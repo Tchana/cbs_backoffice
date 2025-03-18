@@ -1,19 +1,31 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useInstantLayoutTransition } from "framer-motion";
 import { Users } from "../../services/UsersManagement";
-import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
+import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
 import { editUser, deleteUser } from "../../services/UsersManagement";
 import { CreateLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 
-const LessonsTable = async ({ updateLessonsStats }) => {
-  const userData = await Users();
-  const allCourses = await GetCourses();
+const LessonsTable = ({ updateLessonsStats }) => {
+ const [lessonsList, setLessonsList] = useState([]);
 
-  const courseDropDown = [{ title: "Select a Course", id: 0 }, ...allCourses];
+  const getLessons = async(courselist) => {
 
+    const courses = await GetCourses();
+    courses.forEach(course => {
+      console.log(course)
+        // course.lesson.forEach(lesson => {
+        //   console.log(lesson)
+        // });
+
+      setLessonsList([...course.lessons])
+    });
+  }
+
+ 
+  const [allCourses, setAllCourses] = useState([])
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredLessons] = useState(userData);
+  const [filteredLessons, setFilteredLessons] = useState(lessonsList);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageInput, setPageInput] = useState(""); // For "Go to Page"
   const [deletingUserId, setDeletingUserId] = useState(null);
@@ -24,22 +36,42 @@ const LessonsTable = async ({ updateLessonsStats }) => {
   const confirmButtonRef = useRef(null);
   const usersPerPage = 5;
 
+    useEffect(() => {
+      const fetchData = async () => {
+        setLessonsList([])
+        getLessons()
+        setFilteredLessons(lessonsList); // Ensure filteredCourses is updated
+      };
+      fetchData();
+    }, []);
+
+    // ** Search Functionality **
+    useEffect(() => {
+      if (!searchTerm) {
+        setFilteredLessons(lessonsList);
+      } else {
+       const filtered = lessonsList.filter(
+         (lesson) =>
+           lesson.title.toLowerCase().includes(term) ||
+           lesson.description.toLowerCase().includes(term) ||
+           lesson.level.toLowerCase().includes(term) ||
+           `${lesson.teacher.firstName} ${lesson.teacher.lastName}`
+             .toLowerCase()
+             .includes(term)
+       );
+
+
+        setFilteredLessons(filtered);
+      }
+    }, [searchTerm, lessonsList]);
+
   // ** Search Functionality **
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
     setSearchTerm(term);
-
-    const filtered = userData.filter(
-      (user) =>
-        user.firstName.toLowerCase().includes(term) ||
-        user.lastName.toLowerCase().includes(term) ||
-        user.email.toLowerCase().includes(term) ||
-        user.role.toLowerCase().includes(term)
-    );
-
-    setFilteredLessons(filtered);
     setCurrentPage(1); // Reset to first page after filtering
   };
+
   // Start registering
   const handleRegistrationClick = () => {
     setRegistrationLessonId(true);
@@ -124,16 +156,16 @@ const LessonsTable = async ({ updateLessonsStats }) => {
       const updatedUsers = await Users();
 
       // Update both userData (full list) and filteredUsers (search results)
-      userData.length = 0; // Clear and update userData reference
-      userData.push(...updatedUsers); // Update userData to always stay current
+      lessonsList.length = 0; // Clear and update userData reference
+      lessonsList.push(...updatedUsers); // Update userData to always stay current
 
       // Apply the current search filter on the updated user list
       const filtered = updatedUsers.filter(
-        (user) =>
-          user.firstName.toLowerCase().includes(searchTerm) ||
-          user.lastName.toLowerCase().includes(searchTerm) ||
-          user.email.toLowerCase().includes(searchTerm) ||
-          user.role.toLowerCase().includes(searchTerm)
+        (lesson) =>
+          lesson.firstName.toLowerCase().includes(searchTerm) ||
+          lesson.lastName.toLowerCase().includes(searchTerm) ||
+          lesson.email.toLowerCase().includes(searchTerm) ||
+          lesson.role.toLowerCase().includes(searchTerm)
       );
 
       setFilteredLessons(filtered); // Update the displayed list
@@ -146,12 +178,14 @@ const LessonsTable = async ({ updateLessonsStats }) => {
   };
 
   // Compute paginated users
-  const indexOfLastUser = currentPage * usersPerPage;
-  const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const paginatedUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+  const indexOfLastLesson = currentPage * usersPerPage;
+  const indexOfFirstLesson = indexOfLastLesson - usersPerPage;
+ const paginatedLessons = searchTerm
+   ? filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson)
+   : lessonsList.slice(indexOfFirstLesson, indexOfLastLesson);
 
-  // Pagination Controls
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  // Pagination
+  const totalPages = Math.ceil(filteredLessons.length / usersPerPage);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -177,6 +211,15 @@ const LessonsTable = async ({ updateLessonsStats }) => {
     }
     setPageInput("");
   };
+
+  useEffect(() => {
+    const fetchLessons = async () => {
+      const course = await GetCourses(); // Fetch all users
+  const courseDropDown = [{ title: "Select a Course", id: 0 }, ...course];
+      setAllCourses(courseDropDown);
+    };
+    fetchLessons();
+  }, [searchTerm]);
 
   return (
     <motion.div
@@ -285,7 +328,7 @@ const LessonsTable = async ({ updateLessonsStats }) => {
           </thead>
 
           <tbody className="divide-y divide-gray-700">
-            {paginatedUsers.map((user) => (
+            {paginatedLessons.map((user) => (
               <motion.tr
                 key={user.id}
                 initial={{ opacity: 0 }}
@@ -340,6 +383,7 @@ const LessonsTable = async ({ updateLessonsStats }) => {
                       >
                         <Trash2 size={18} />
                       </button>
+                      
                     </>
                   )}
                 </td>
