@@ -5,7 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { signup } from "../../services/AuthenticationManagement";
 
 function AuthPage() {
-  localStorage.setItem("auth",false)
+  localStorage.setItem("auth", false);
   const navigate = useNavigate();
   const [signIn, toggle] = React.useState(true);
 
