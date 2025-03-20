@@ -6,11 +6,9 @@ import Sidebar from "./components/common/Sidebar";
 import OverviewPage from "./pages/OverviewPage";
 import CoursesPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
-import LessonsPage from "./pages/LessonsPage";
-import OrdersPage from "./pages/OrdersPage";
+import BooksPage from "./pages/BooksPage";
 import AnalyticsPage from "./pages/AnalyticsPage";
 import SettingsPage from "./pages/SettingsPage";
-import SignupPage from "./pages/Signup";
 import AuthPage from "./components/authentication/LoginSignup";
 
 function App() {
@@ -42,8 +40,7 @@ function App() {
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/users" element={<UsersPage />} />
         <Route path="/course" element={<CoursesPage />} />
-        {/* <Route path="/lessons" element={<LessonsPage />} /> */}
-        <Route path="/orders" element={<OrdersPage />} />
+        <Route path="/books" element={<BooksPage />} />
         <Route path="/analytics" element={<AnalyticsPage />} />
         <Route path="/settings" element={<SettingsPage />} />
       </Routes>
