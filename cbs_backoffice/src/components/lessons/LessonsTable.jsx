@@ -7,23 +7,21 @@ import { CreateLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 
 const LessonsTable = ({ updateLessonsStats }) => {
- const [lessonsList, setLessonsList] = useState([]);
+  const [lessonsList, setLessonsList] = useState([]);
 
-  const getLessons = async(courselist) => {
-
+  const getLessons = async (courselist) => {
     const courses = await GetCourses();
-    courses.forEach(course => {
-      console.log(course)
-        // course.lesson.forEach(lesson => {
-        //   console.log(lesson)
-        // });
+    courses.forEach((course) => {
+      console.log(course);
+      // course.lesson.forEach(lesson => {
+      //   console.log(lesson)
+      // });
 
-      setLessonsList([...course.lessons])
+      setLessonsList([...course.lessons]);
     });
-  }
+  };
 
- 
-  const [allCourses, setAllCourses] = useState([])
+  const [allCourses, setAllCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredLessons, setFilteredLessons] = useState(lessonsList);
   const [currentPage, setCurrentPage] = useState(1);
@@ -36,34 +34,33 @@ const LessonsTable = ({ updateLessonsStats }) => {
   const confirmButtonRef = useRef(null);
   const usersPerPage = 5;
 
-    useEffect(() => {
-      const fetchData = async () => {
-        setLessonsList([])
-        getLessons()
-        setFilteredLessons(lessonsList); // Ensure filteredCourses is updated
-      };
-      fetchData();
-    }, []);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLessonsList([]);
+      getLessons();
+      setFilteredLessons(lessonsList); // Ensure filteredCourses is updated
+    };
+    fetchData();
+  }, []);
 
-    // ** Search Functionality **
-    useEffect(() => {
-      if (!searchTerm) {
-        setFilteredLessons(lessonsList);
-      } else {
-       const filtered = lessonsList.filter(
-         (lesson) =>
-           lesson.title.toLowerCase().includes(term) ||
-           lesson.description.toLowerCase().includes(term) ||
-           lesson.level.toLowerCase().includes(term) ||
-           `${lesson.teacher.firstName} ${lesson.teacher.lastName}`
-             .toLowerCase()
-             .includes(term)
-       );
+  // ** Search Functionality **
+  useEffect(() => {
+    if (!searchTerm) {
+      setFilteredLessons(lessonsList);
+    } else {
+      const filtered = lessonsList.filter(
+        (lesson) =>
+          lesson.title.toLowerCase().includes(term) ||
+          lesson.description.toLowerCase().includes(term) ||
+          lesson.level.toLowerCase().includes(term) ||
+          `${lesson.teacher.firstName} ${lesson.teacher.lastName}`
+            .toLowerCase()
+            .includes(term)
+      );
 
-
-        setFilteredLessons(filtered);
-      }
-    }, [searchTerm, lessonsList]);
+      setFilteredLessons(filtered);
+    }
+  }, [searchTerm, lessonsList]);
 
   // ** Search Functionality **
   const handleSearch = (e) => {
@@ -97,7 +94,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
         selectedValues.file || ""
       );
 
-      const updatedUsers = await Users(); // Pay attention to not forget to get the lessons after the update is been made in the lesson list
+      const updatedUsers = await GetUsers(); // Pay attention to not forget to get the lessons after the update is been made in the lesson list
       setFilteredLessons(updatedUsers);
       updateLessonsStats(updatedUsers);
       setRegistrationLessonId(false);
@@ -136,7 +133,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
       selectedValues.role
     );
 
-    const updatedUsers = await Users();
+    const updatedUsers = await GetUsers();
     setFilteredLessons(updatedUsers); // Update local filtered state
     updateLessonsStats(updatedUsers); // Update the stats
     setEditingUserId(null);
@@ -153,7 +150,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
       await deleteUser(userId); // API call to delete user
 
       // Fetch the latest list of users from the API
-      const updatedUsers = await Users();
+      const updatedUsers = await GetUsers();
 
       // Update both userData (full list) and filteredUsers (search results)
       lessonsList.length = 0; // Clear and update userData reference
@@ -180,9 +177,9 @@ const LessonsTable = ({ updateLessonsStats }) => {
   // Compute paginated users
   const indexOfLastLesson = currentPage * usersPerPage;
   const indexOfFirstLesson = indexOfLastLesson - usersPerPage;
- const paginatedLessons = searchTerm
-   ? filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson)
-   : lessonsList.slice(indexOfFirstLesson, indexOfLastLesson);
+  const paginatedLessons = searchTerm
+    ? filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson)
+    : lessonsList.slice(indexOfFirstLesson, indexOfLastLesson);
 
   // Pagination
   const totalPages = Math.ceil(filteredLessons.length / usersPerPage);
@@ -215,7 +212,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
   useEffect(() => {
     const fetchLessons = async () => {
       const course = await GetCourses(); // Fetch all users
-  const courseDropDown = [{ title: "Select a Course", id: 0 }, ...course];
+      const courseDropDown = [{ title: "Select a Course", id: 0 }, ...course];
       setAllCourses(courseDropDown);
     };
     fetchLessons();
@@ -383,7 +380,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
                       >
                         <Trash2 size={18} />
                       </button>
-                      
                     </>
                   )}
                 </td>

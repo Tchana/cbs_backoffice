@@ -1,16 +1,18 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Users } from "../../services/UsersManagement";
-import { Edit, Search, Trash2, Check, Plus, X } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { GetUsers } from "../../services/UsersManagement";
+import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
 import { editUser, deleteUser } from "../../services/UsersManagement";
 import { signup } from "../../services/AuthenticationManagement";
+import UserRegistrationModal from "./UserRegistrationModal";
+import UserViewModal from "./UserViewModal";
 
 const UsersTable = ({ updateUserStats }) => {
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredUsers, setFilteredUsers] = useState(usersList);
+  const [filteredUsers, setFilteredUsers] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageInput, setPageInput] = useState(""); // For "Go to Page"
+  const [pageInput, setPageInput] = useState("");
   const [deletingUserId, setDeletingUserId] = useState(null);
   const [registerUserId, setRegistrationUserId] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
@@ -18,9 +20,13 @@ const UsersTable = ({ updateUserStats }) => {
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
   const usersPerPage = 5;
+  const [viewingUser, setViewingUser] = useState(null);
 
   const fetchUsers = async () => {
-    setUsersList(await Users());
+    const users = await GetUsers();
+    setUsersList(users);
+    // Initialize filtered users with all users
+    setFilteredUsers(users);
   };
 
   // ** Search Functionality **
@@ -38,7 +44,9 @@ const UsersTable = ({ updateUserStats }) => {
 
     setFilteredUsers(filtered);
     setCurrentPage(1); // Reset to first page after filtering
+    setPageInput(""); // Reset page input when search changes
   };
+
   // Start registering
   const handleRegistrationClick = () => {
     setRegistrationUserId(true);
@@ -49,6 +57,12 @@ const UsersTable = ({ updateUserStats }) => {
       password: "",
       role: "teacher",
     });
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setRegistrationUserId(false);
+    setEditValues({});
   };
 
   // Confirm Registration
@@ -63,7 +77,7 @@ const UsersTable = ({ updateUserStats }) => {
         editValues.role
       );
 
-      const updatedUsers = await Users();
+      const updatedUsers = await GetUsers();
       setFilteredUsers(updatedUsers);
       updateUserStats(updatedUsers);
       setRegistrationUserId(false);
@@ -102,7 +116,7 @@ const UsersTable = ({ updateUserStats }) => {
       editValues.role
     );
 
-    const updatedUsers = await Users();
+    const updatedUsers = await GetUsers();
     setFilteredUsers(updatedUsers); // Update local filtered state
     updateUserStats(updatedUsers); // Update the stats
     setEditingUserId(null);
@@ -119,7 +133,7 @@ const UsersTable = ({ updateUserStats }) => {
       await deleteUser(userId); // API call to delete user
 
       // Fetch the latest list of users from the API
-      const updatedUsers = await Users();
+      const updatedUsers = await GetUsers();
 
       // Update both userData (full list) and filteredUsers (search results)
       usersList.length = 0; // Clear and update userData reference
@@ -143,31 +157,40 @@ const UsersTable = ({ updateUserStats }) => {
     setDeletingUserId(null); // Reset delete state
   };
 
-  // Compute paginated users
+  // Compute paginated users and total pages
+  const currentUsers = searchTerm ? filteredUsers : usersList;
+  const totalPages = Math.max(1, Math.ceil(currentUsers.length / usersPerPage));
+
+  // Ensure current page is valid when data changes
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(totalPages);
+    }
+  }, [currentUsers.length, totalPages]);
+
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
-  const paginatedUsers = searchTerm
-    ? filteredUsers.slice(indexOfFirstUser, indexOfLastUser)
-    : usersList.slice(indexOfFirstUser, indexOfLastUser);
+  const paginatedUsers = currentUsers.slice(indexOfFirstUser, indexOfLastUser);
 
   // Pagination Controls
-  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
-
   const handleNextPage = () => {
     if (currentPage < totalPages) {
       setCurrentPage(currentPage + 1);
+      setPageInput(""); // Reset page input when changing pages
     }
   };
 
   const handlePrevPage = () => {
     if (currentPage > 1) {
       setCurrentPage(currentPage - 1);
+      setPageInput(""); // Reset page input when changing pages
     }
   };
 
   // Go to Page Functionality
   const handlePageInputChange = (e) => {
-    setPageInput(e.target.value);
+    const value = e.target.value;
+    setPageInput(value);
   };
 
   const handleGoToPage = () => {
@@ -175,12 +198,22 @@ const UsersTable = ({ updateUserStats }) => {
     if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= totalPages) {
       setCurrentPage(pageNumber);
     }
-    setPageInput("");
+    setPageInput(""); // Reset input after navigation
+  };
+
+  // Handle View User
+  const handleViewUser = (user) => {
+    setViewingUser(user);
+  };
+
+  // Close View Modal
+  const handleCloseViewModal = () => {
+    setViewingUser(null);
   };
 
   useEffect(() => {
     fetchUsers();
-  }, [searchTerm]);
+  }, []); // Remove searchTerm dependency as it's handled in handleSearch
 
   return (
     <motion.div
@@ -201,75 +234,33 @@ const UsersTable = ({ updateUserStats }) => {
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
-        {!registerUserId && (
-          <button
-            onClick={handleRegistrationClick}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            <Plus size={30} />
-          </button>
-        )}
+        <button
+          onClick={handleRegistrationClick}
+          className="text-indigo-400 hover:text-indigo-300"
+        >
+          <Plus size={30} />
+        </button>
       </div>
 
-      {/* Registration Form */}
-      {registerUserId && (
-        <div className="bg-gray-700 p-4 rounded-md">
-          <button
-            className="absolute top-10 right-9 text-red-500 hover:text-red-700"
-            onClick={() => setRegistrationUserId(false)} // Cancel registration
-          >
-            <X size={24} />
-          </button>
-          <input
-            type="text"
-            placeholder="First Name"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "firstName")}
+      {/* Registration Modal */}
+      <AnimatePresence>
+        {registerUserId && (
+          <UserRegistrationModal
+            onClose={handleCloseModal}
+            onRegister={handleConfirmRegistration}
+            editValues={editValues}
+            handleInputChange={handleInputChange}
+            setEditValues={setEditValues}
           />
-          <input
-            type="text"
-            placeholder="Last Name"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "lastName")}
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "email")}
-          />
-          <input
-            type="password"
-            placeholder="Password"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "password")}
-          />
-          <input
-            type="file"
-            placeholder="Profile Image"
-            accept="imgage/*"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "p_image")}
-          />
-          <select
-            placeholder="Role"
-            value={editValues.role}
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) =>
-              setEditValues({ ...editValues, role: e.target.value })
-            }
-          >
-            <option value="teacher">Teacher</option>
-            <option value="student">Student</option>
-          </select>
-          <button
-            onClick={handleConfirmRegistration}
-            className="bg-green-500 px-4 py-2 rounded-md text-white"
-          >
-            Register
-          </button>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
+
+      {/* View User Modal */}
+      <AnimatePresence>
+        {viewingUser && (
+          <UserViewModal user={viewingUser} onClose={handleCloseViewModal} />
+        )}
+      </AnimatePresence>
 
       {/* Table */}
       <div className="overflow-x-auto">
@@ -333,6 +324,12 @@ const UsersTable = ({ updateUserStats }) => {
                     </button>
                   ) : (
                     <>
+                      <button
+                        onClick={() => handleViewUser(user)}
+                        className="text-gray-400 hover:text-gray-300 mr-2"
+                      >
+                        <Eye size={18} />
+                      </button>
                       <button
                         onClick={() => handleEditClick(user)}
                         className="text-indigo-400 hover:text-indigo-300 mr-2"

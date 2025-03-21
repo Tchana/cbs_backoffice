@@ -1,47 +1,70 @@
-import React from "react";
+import React, { useState } from "react";
 import * as Components from "./Components";
-import { login } from "../../services/AuthenticationManagement";
+import { login, signup } from "../../services/AuthenticationManagement";
 import { useNavigate } from "react-router-dom";
-import { signup } from "../../services/AuthenticationManagement";
 
 function AuthPage() {
-  localStorage.setItem("auth", false);
   const navigate = useNavigate();
-  const [signIn, toggle] = React.useState(true);
+  const [signIn, toggle] = useState(true);
+  const [error, setError] = useState("");
 
-  const [email, setEmail] = React.useState("");
-  const [password, setPassword] = React.useState("");
-  const [firstName, setFirstName] = React.useState("");
-  const [lastName, setLastName] = React.useState("");
-  const [p_image, setP_image] = React.useState(null);
-  const [role, setRole] = React.useState("teacher");
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+    firstName: "",
+    lastName: "",
+    p_image: null,
+    role: "teacher",
+  });
+
+  const handleInputChange = (e) => {
+    const { id, value, files } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [id]: files ? files[0] : value,
+    }));
+  };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    try {
-      await login(email, password).then((data) => {
-        localStorage.setItem("authToken", data.token);
-        localStorage.setItem("auth", true);
-        navigate("/overview");
-      });
+    setError("");
 
-      navigate(0);
+    try {
+      const data = await login(formData.email, formData.password);
+      localStorage.setItem("authToken", data.token);
+      localStorage.setItem("auth", "true");
+      navigate("/overview");
+      navigate(0); // Refresh to apply new auth state
     } catch (error) {
       console.error("Error logging in:", error);
+      setError("Invalid email or password");
     }
   };
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+    setError("");
 
-    console.log(firstName);
     try {
-      await signup(email, password, firstName, lastName, p_image, role);
+      // First register the user
+      await signup(
+        formData.email,
+        formData.password,
+        formData.firstName,
+        formData.lastName,
+        formData.p_image,
+        formData.role
+      );
 
-      console.log("Signup successful");
-      toggle(true);
+      // Then automatically log them in
+      const loginData = await login(formData.email, formData.password);
+      localStorage.setItem("authToken", loginData.token);
+      localStorage.setItem("auth", "true");
+      navigate("/overview");
+      navigate(0); // Refresh to apply new auth state
     } catch (error) {
-      console.error("Error Signing up:", error);
+      console.error("Error during signup:", error);
+      setError("Failed to create account. Please try again.");
     }
   };
 
@@ -50,36 +73,37 @@ function AuthPage() {
       <Components.SignUpContainer $signIn={signIn}>
         <Components.Form onSubmit={handleSignUp}>
           <Components.Title>Create Account</Components.Title>
+          {error && <div className="text-red-500 mb-4">{error}</div>}
           <Components.Input
             type="text"
-            id="firstname"
+            id="firstName"
             placeholder="First Name"
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            value={formData.firstName}
+            onChange={handleInputChange}
             required
           />
           <Components.Input
             type="text"
-            id="lastname"
+            id="lastName"
             placeholder="Last Name"
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            value={formData.lastName}
+            onChange={handleInputChange}
             required
           />
           <Components.Input
-            type="text"
+            type="email"
             id="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={handleInputChange}
             required
           />
           <Components.Input
             type="password"
             id="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={formData.password}
+            onChange={handleInputChange}
             required
           />
           <Components.Input
@@ -87,13 +111,13 @@ function AuthPage() {
             id="p_image"
             accept="image/*"
             placeholder="Profile Image"
-            onChange={(e) => setP_image(e.target.files[0])}
+            onChange={handleInputChange}
             required
           />
           <Components.Select
             id="role"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
+            value={formData.role}
+            onChange={handleInputChange}
             required
           >
             <option value="teacher">Teacher</option>
@@ -106,17 +130,20 @@ function AuthPage() {
       <Components.SignInContainer $signIn={signIn}>
         <Components.Form onSubmit={handleLogin}>
           <Components.Title>Login</Components.Title>
+          {error && <div className="text-red-500 mb-4">{error}</div>}
           <Components.Input
             type="email"
+            id="email"
             placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            value={formData.email}
+            onChange={handleInputChange}
           />
           <Components.Input
             type="password"
+            id="password"
             placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            value={formData.password}
+            onChange={handleInputChange}
           />
           <Components.Anchor href="#">Forgot your password?</Components.Anchor>
           <Components.Button type="submit">Login</Components.Button>

@@ -61,7 +61,7 @@ export const lessons = async (token) => {
   return data;
 };
 
-export const Users = async () => {
+export const GetUsers = async () => {
   const response = await fetch(`${API_URL}/user`, {
     method: "GET",
     headers: {

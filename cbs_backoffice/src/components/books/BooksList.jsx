@@ -1,13 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Search, Eye } from "lucide-react";
 import { GetBooks } from "../../services/BookManagement";
 
-const orderData = await GetBooks();
-
 const OrdersGrid = () => {
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredOrders, setFilteredOrders] = useState(orderData);
+  const [orderData, setOrderData] = useState([]);
+  const [filteredOrders, setFilteredOrders] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setIsLoading(true);
+        const books = await GetBooks();
+        setOrderData(books);
+        setFilteredOrders(books);
+      } catch (err) {
+        console.error("Error fetching books:", err);
+        setError("Failed to load books. Please try again later.");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
 
   const handleSearch = (e) => {
     const term = e.target.value.toLowerCase();
@@ -23,6 +42,35 @@ const OrdersGrid = () => {
   const openBook = (bookUrl) => {
     window.open(bookUrl, "_self");
   };
+
+  if (isLoading) {
+    return (
+      <motion.div
+        className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700 flex items-center justify-center"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="text-white text-xl">Loading books...</div>
+      </motion.div>
+    );
+  }
+
+  if (error) {
+    return (
+      <motion.div
+        className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.4 }}
+      >
+        <div className="text-red-500 text-center">
+          <p className="text-xl mb-2">Error</p>
+          <p>{error}</p>
+        </div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div

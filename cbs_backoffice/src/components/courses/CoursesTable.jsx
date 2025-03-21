@@ -1,13 +1,19 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useInstantLayoutTransition } from "framer-motion";
+import {
+  motion,
+  useInstantLayoutTransition,
+  AnimatePresence,
+} from "framer-motion";
 import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
-import { editUser, Users } from "../../services/UsersManagement";
+import { editUser, GetUsers } from "../../services/UsersManagement";
 import {
   GetCourses,
   CreateCourse,
   deleteCourse,
   editCourse,
 } from "../../services/CourseManagement";
+import CourseRegistrationModal from "./CourseRegistrationModal";
+import CourseViewModal from "./CourseViewModal";
 
 const CoursesTable = ({ updateCourseStats }) => {
   const [allTeachers, setAllTeachers] = useState([]);
@@ -21,10 +27,11 @@ const CoursesTable = ({ updateCourseStats }) => {
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [popUpState, setPopUpState] = useState(false);
-  const [courseToDescribe, setCoursesToDescribe] = useState({})
+  const [courseToDescribe, setCoursesToDescribe] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
   const coursesPerPage = 5;
+  const [viewingCourse, setViewingCourse] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -69,6 +76,12 @@ const CoursesTable = ({ updateCourseStats }) => {
       teacherFirstName: "",
       teacherLastName: "",
     });
+  };
+
+  // Close modal
+  const handleCloseModal = () => {
+    setRegistrationUserId(false);
+    setEditValues({});
   };
 
   // Confirm Registration
@@ -205,12 +218,22 @@ const CoursesTable = ({ updateCourseStats }) => {
 
   useEffect(() => {
     const fetchTeachers = async () => {
-      const users = await Users(); // Fetch all users
+      const users = await GetUsers(); // Fetch all users
       const teachers = users.filter((user) => user.role === "teacher"); // Filter teachers
       setAllTeachers(teachers);
     };
     fetchTeachers();
   }, [searchTerm]);
+
+  // Handle View Course
+  const handleViewCourse = (course) => {
+    setViewingCourse(course);
+  };
+
+  // Close View Modal
+  const handleCloseViewModal = () => {
+    setViewingCourse(null);
+  };
 
   return (
     <>
@@ -236,59 +259,37 @@ const CoursesTable = ({ updateCourseStats }) => {
                 size={18}
               />
             </div>
-            {!registerCourseId && (
-              <button
-                onClick={handleCourseCreationClick}
-                className="text-indigo-400 hover:text-indigo-300"
-              >
-                <Plus size={30} />
-              </button>
-            )}
+            <button
+              onClick={handleCourseCreationClick}
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              <Plus size={30} />
+            </button>
           </div>
 
-          {/* Registration Form */}
-          {registerCourseId && (
-            <div className="bg-gray-700 p-4 rounded-md">
-              <button
-                className="absolute top-10 right-9 text-red-500 hover:text-red-700"
-                onClick={() => setRegistrationUserId(false)} // Cancel registration
-              >
-                <X size={24} />
-              </button>
-              <input
-                type="text"
-                placeholder="Title"
-                className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                onChange={(e) => handleInputChange(e, "title")}
+          {/* Registration Modal */}
+          <AnimatePresence>
+            {registerCourseId && (
+              <CourseRegistrationModal
+                onClose={handleCloseModal}
+                onRegister={handleConfirmRegistration}
+                editValues={editValues}
+                handleInputChange={handleInputChange}
+                setEditValues={setEditValues}
+                allTeachers={allTeachers}
               />
-              <input
-                type="text"
-                placeholder="Description"
-                className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                onChange={(e) => handleInputChange(e, "description")}
-              />
-              <input
-                type="text"
-                placeholder="Teacher's Name"
-                className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                onChange={(e) => handleInputChange(e, "teacherFirstName")}
-              />
+            )}
+          </AnimatePresence>
 
-              <input
-                type="text"
-                placeholder="Level"
-                className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-                onChange={(e) => handleInputChange(e, "level")}
+          {/* View Course Modal */}
+          <AnimatePresence>
+            {viewingCourse && (
+              <CourseViewModal
+                course={viewingCourse}
+                onClose={handleCloseViewModal}
               />
-
-              <button
-                onClick={handleConfirmRegistration}
-                className="bg-green-500 px-4 py-2 rounded-md text-white"
-              >
-                Register
-              </button>
-            </div>
-          )}
+            )}
+          </AnimatePresence>
 
           {/* Table */}
           <div className="overflow-x-auto">
@@ -396,23 +397,23 @@ const CoursesTable = ({ updateCourseStats }) => {
                       ) : (
                         <>
                           <button
-                            onClick={() => {
-                              setPopUpState(true);
-                              setCoursesToDescribe(course);
-                            }}
+                            onClick={() => handleViewCourse(course)}
                             className="text-gray-400 hover:text-gray-300 mr-2"
+                            aria-label="View course details"
                           >
                             <Eye size={18} />
                           </button>
                           <button
                             onClick={() => handleEditClick(course)}
                             className="text-indigo-400 hover:text-indigo-300 mr-2"
+                            aria-label="Edit course"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(course)}
                             className="text-red-400 hover:text-red-300"
+                            aria-label="Delete course"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -473,48 +474,6 @@ const CoursesTable = ({ updateCourseStats }) => {
             </button>
           </div>
         </motion.div>
-      )}
-
-      {popUpState && (
-        <>
-          <motion.div
-            className="relative bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-          >
-            <button
-              className="absolute top-4 right-9 text-red-500 hover:text-red-700"
-              onClick={() => {
-                setPopUpState(false);
-                setCoursesToDescribe({});
-              }}
-            >
-              <X size={23} />
-            </button>
-
-            <p>Title: {courseToDescribe?.title}</p>
-            <p>Description: {courseToDescribe?.description}</p>
-            <p>Level: {courseToDescribe?.level}</p>
-            <p>
-              Teacher: {courseToDescribe.teacher?.firstName}{" "}
-              {courseToDescribe.teacher?.lastName}
-            </p>
-
-            {courseToDescribe?.lessons &&
-              courseToDescribe.lessons.length > 0 && (
-                <div>
-                  <p className="font-semibold">Lessons:</p>
-                  {courseToDescribe.lessons.map((element, index) => (
-                    <p key={index} className="ml-4">
-                      {element.title}
-                    </p>
-                  ))}
-                </div>
-              )}
-
-          </motion.div>
-        </>
       )}
     </>
   );
