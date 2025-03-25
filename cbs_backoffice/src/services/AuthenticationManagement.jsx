@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "https://mardoche.pythonanywhere.com/";
 
 export const login = async (email, password) => {
   const response = await fetch(`${API_URL}/login`, {

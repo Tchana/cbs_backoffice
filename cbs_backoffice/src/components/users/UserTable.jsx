@@ -19,7 +19,7 @@ const UsersTable = ({ updateUserStats }) => {
   const [editValues, setEditValues] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
-  const usersPerPage = 5;
+  const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
 
   const fetchUsers = async () => {

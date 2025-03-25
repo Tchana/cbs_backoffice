@@ -18,6 +18,7 @@ const OverviewPage = () => {
     },
   });
 
+  // Fetch stats initially    
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -35,6 +36,8 @@ const OverviewPage = () => {
           totalUsers: users.length,
           totalCourses: courses.length,
           totalBooks: books.length,
+          totalteachers: teachers,
+          totalstudents: students,
           userRatio: {
             teachers,
             students,
@@ -49,11 +52,11 @@ const OverviewPage = () => {
   }, []);
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Overview</h1>
+    <div className="p-8 space-y-8 max-w-7xl mx-auto">
+      <h1 className="text-3xl font-bold text-white mb-8">Overview</h1>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {/* Total Users */}
         <StatCard
           icon={Users}
@@ -61,11 +64,23 @@ const OverviewPage = () => {
           value={stats.totalUsers}
           color="text-indigo-500"
         />
+        <StatCard
+          icon={Users}
+          name="Total Teachers"
+          value={stats.totalteachers}
+          color="text-indigo-500"
+        />
+        <StatCard
+          icon={Users}
+          name="Total Students"
+          value={stats.totalstudents}
+          color="text-indigo-500"
+        />
 
-        {/* Active Courses */}
+        {/* Total Courses */}
         <StatCard
           icon={GraduationCap}
-          name="Active Courses"
+          name="Total Courses"
           value={stats.totalCourses}
           color="text-indigo-500"
         />

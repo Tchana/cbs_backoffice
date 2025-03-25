@@ -4,8 +4,8 @@ import {
   useInstantLayoutTransition,
   AnimatePresence,
 } from "framer-motion";
-import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
-import { editUser, GetUsers } from "../../services/UsersManagement";
+import { Edit, Search, Trash2, Check, Plus, Eye } from "lucide-react";
+import { GetUsers } from "../../services/UsersManagement";
 import {
   GetCourses,
   CreateCourse,
@@ -14,7 +14,6 @@ import {
 } from "../../services/CourseManagement";
 import CourseRegistrationModal from "./CourseRegistrationModal";
 import CourseViewModal from "./CourseViewModal";
-
 const CoursesTable = ({ updateCourseStats }) => {
   const [allTeachers, setAllTeachers] = useState([]);
   const [courseList, setCourseList] = useState([]);
@@ -27,10 +26,9 @@ const CoursesTable = ({ updateCourseStats }) => {
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editValues, setEditValues] = useState({});
   const [popUpState, setPopUpState] = useState(false);
-  const [courseToDescribe, setCoursesToDescribe] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
-  const coursesPerPage = 5;
+  const coursesPerPage = 10;
   const [viewingCourse, setViewingCourse] = useState(null);
 
   useEffect(() => {
