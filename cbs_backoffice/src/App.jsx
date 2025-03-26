@@ -6,10 +6,11 @@ import Sidebar from "./components/common/Sidebar";
 import OverviewPage from "./pages/OverviewPage";
 import CoursesPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
+import StudentPage from "./pages/StudentPage";
+import TeacherPage from "./pages/TeacherPage";
 import BooksPage from "./pages/BooksPage";
-import AnalyticsPage from "./pages/AnalyticsPage";
-import SettingsPage from "./pages/SettingsPage";
 import AuthPage from "./components/authentication/LoginSignup";
+import AccountInfoPage from "./pages/AccountInfoPage";
 
 // Layout component for authenticated routes
 const AuthenticatedLayout = () => (
@@ -23,10 +24,11 @@ const AuthenticatedLayout = () => (
       <Routes>
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/users" element={<UsersPage />} />
+        <Route path="/students" element={<StudentPage />} />
+        <Route path="/teachers" element={<TeacherPage />} />
         <Route path="/course" element={<CoursesPage />} />
         <Route path="/books" element={<BooksPage />} />
-        <Route path="/analytics" element={<AnalyticsPage />} />
-        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/account-info" element={<AccountInfoPage />} />
       </Routes>
     </div>
   </div>

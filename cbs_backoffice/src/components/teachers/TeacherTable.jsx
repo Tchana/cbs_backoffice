@@ -7,7 +7,7 @@ import { signup } from "../../services/AuthenticationManagement";
 import UserRegistrationModal from "./UserRegistrationModal";
 import UserViewModal from "./UserViewModal";
 
-const UsersTable = ({ updateUserStats }) => {
+const TeacherTable = ({ updateUserStats }) => {
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -22,11 +22,13 @@ const UsersTable = ({ updateUserStats }) => {
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
 
+  const userRole = JSON.parse(localStorage.getItem("role"));
+
   const fetchUsers = async () => {
     const users = await GetUsers();
-    setUsersList(users.filter((user) => user.role === "admin"));
+    setUsersList(users.filter((user) => user.role === "teacher"));
     // Initialize filtered users with all users
-    setFilteredUsers(users.filter((user) => user.role === "admin"));
+    setFilteredUsers(users.filter((user) => user.role === "teacher"));
   };
 
   // ** Search Functionality **
@@ -78,8 +80,8 @@ const UsersTable = ({ updateUserStats }) => {
       );
 
       const updatedUsers = await GetUsers();
-      setFilteredUsers(updatedUsers.filter((user) => user.role === "admin"));
-      updateUserStats(updatedUsers.filter((user) => user.role === "admin"));
+      setFilteredUsers(updatedUsers.filter((user) => user.role === "teacher"));
+      updateUserStats(updatedUsers.filter((user) => user.role === "teacher"));
       setRegistrationUserId(false);
     } catch (error) {
       console.error("Error registering user:", error);
@@ -117,8 +119,8 @@ const UsersTable = ({ updateUserStats }) => {
     );
 
     const updatedUsers = await GetUsers();
-    setFilteredUsers(updatedUsers.filter((user) => user.role === "admin")); // Update local filtered state
-    updateUserStats(updatedUsers.filter((user) => user.role === "admin")); // Update the stats
+    setFilteredUsers(updatedUsers.filter((user) => user.role === "teacher")); // Update local filtered state
+    updateUserStats(updatedUsers.filter((user) => user.role === "teacher")); // Update the stats
     setEditingUserId(null);
   };
 
@@ -137,7 +139,7 @@ const UsersTable = ({ updateUserStats }) => {
 
       // Update both userData (full list) and filteredUsers (search results)
       usersList.length = 0; // Clear and update userData reference
-      usersList.push(...updatedUsers.filter((user) => user.role === "admin")); // Update userData to always stay current
+      usersList.push(...updatedUsers.filter((user) => user.role === "teacher")); // Update userData to always stay current
 
       // Apply the current search filter on the updated user list
       const filtered = updatedUsers.filter(
@@ -149,7 +151,7 @@ const UsersTable = ({ updateUserStats }) => {
       );
 
       setFilteredUsers(filtered); // Update the displayed list
-      updateUserStats(updatedUsers.filter((user) => user.role === "admin")); // Update statistics
+      updateUserStats(updatedUsers.filter((user) => user.role === "teacher")); // Update statistics
     } catch (error) {
       console.error("Error deleting user:", error);
     }
@@ -267,7 +269,7 @@ const UsersTable = ({ updateUserStats }) => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              {["First Name", "Last Name", "Email", "Role", "Actions"].map(
+              {["First Name", "Last Name", "Email", "Actions"].map(
                 (heading) => (
                   <th
                     key={heading}
@@ -289,7 +291,7 @@ const UsersTable = ({ updateUserStats }) => {
                 transition={{ duration: 0.3 }}
                 ref={editingUserId === user.id ? editRowRef : null}
               >
-                {["firstName", "lastName", "email", "role"].map((field) => (
+                {["firstName", "lastName", "email"].map((field) => (
                   <td key={field} className="px-6 py-4 whitespace-nowrap">
                     {editingUserId === user.id ? (
                       <input
@@ -330,18 +332,22 @@ const UsersTable = ({ updateUserStats }) => {
                       >
                         <Eye size={18} />
                       </button>
-                      <button
-                        onClick={() => handleEditClick(user)}
-                        className="text-indigo-400 hover:text-indigo-300 mr-2"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteClick(user)}
-                        className="text-red-400 hover:text-red-300"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      {userRole === "admin" && (
+                        <>
+                          <button
+                            onClick={() => handleEditClick(user)}
+                            className="text-indigo-400 hover:text-indigo-300 mr-2"
+                          >
+                            <Edit size={18} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteClick(user)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        </>
+                      )}
                     </>
                   )}
                 </td>
@@ -402,4 +408,4 @@ const UsersTable = ({ updateUserStats }) => {
   );
 };
 
-export default UsersTable;
+export default TeacherTable;

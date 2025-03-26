@@ -1,4 +1,4 @@
-const API_URL = "https://mardoche.pythonanywhere.com/";
+const API_URL = "https://mardoche.pythonanywhere.com";
 
 export const courses = async () => {
   const token = localStorage.getItem("authToken");

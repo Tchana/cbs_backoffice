@@ -11,13 +11,13 @@ import PropTypes from "prop-types";
 
 const COLORS = ["#8884d8", "#82ca9d", "#ff7f50"]; // Colors for Teachers, Students, Admins
 
-const UserRatioChart = ({ teachers, students }) => {
+const UserRatioChart = ({ teachers, students, admins }) => {
   // Create data array for the chart
   const userStats = [
     { name: "Teachers", value: teachers || 0 },
     { name: "Students", value: students || 0 },
+    { name: "Admins", value: admins || 0 },
   ].filter((entry) => entry.value > 0); // Filter out zero values
-
   // Compute total users for percentage calculation
   const totalUsers = userStats.reduce((sum, entry) => sum + entry.value, 0);
 
@@ -72,6 +72,7 @@ const UserRatioChart = ({ teachers, students }) => {
 UserRatioChart.propTypes = {
   teachers: PropTypes.number.isRequired,
   students: PropTypes.number.isRequired,
+  admins: PropTypes.number.isRequired,
 };
 
 export default UserRatioChart;

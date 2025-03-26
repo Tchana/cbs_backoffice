@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import * as Components from "./Components";
 import { login, signup } from "../../services/AuthenticationManagement";
 import { useNavigate } from "react-router-dom";
+import { GetUsers } from "../../services/UsersManagement";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -31,8 +32,23 @@ function AuthPage() {
 
     try {
       const data = await login(formData.email, formData.password);
+
+      if (data.role === "student") {
+        throw new Error("Student account not allowed");
+      }
+
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("auth", "true");
+      localStorage.setItem("role", JSON.stringify(data.role));
+
+      const userData = await GetUsers();
+      const user = userData.find((user) => user.email === formData.email);
+      if (user.role === "student") {
+        localStorage.setItem("auth", "false");
+        localStorage.removeItem("authToken");
+        throw new Error("Student account not allowed");
+      }
+      localStorage.setItem("role", JSON.stringify(user.role));
       navigate("/overview");
       navigate(0); // Refresh to apply new auth state
     } catch (error) {
@@ -56,10 +72,19 @@ function AuthPage() {
         formData.role
       );
 
-      // Then automatically log them in
+      // Then automatically log them in and returns the token as userdata
       const loginData = await login(formData.email, formData.password);
       localStorage.setItem("authToken", loginData.token);
-      localStorage.setItem("auth", "true");
+      localStorage.setItem("auth", "true");     
+
+      const loginUser = await GetUsers();
+      const login = loginUser.find((user) => user.email === formData.email);
+      if (login.role === "student") {
+        localStorage.setItem("auth", "false");
+        localStorage.removeItem("authToken");
+        throw new Error("Student account not allowed");
+      }
+      localStorage.setItem("role", login.role);
       navigate("/overview");
       navigate(0); // Refresh to apply new auth state
     } catch (error) {

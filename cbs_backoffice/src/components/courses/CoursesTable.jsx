@@ -1,9 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import {
-  motion,
-  useInstantLayoutTransition,
-  AnimatePresence,
-} from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Search, Trash2, Check, Plus, Eye } from "lucide-react";
 import { GetUsers } from "../../services/UsersManagement";
 import {
@@ -158,8 +154,8 @@ const CoursesTable = ({ updateCourseStats }) => {
       const updatedCourses = await GetCourses();
 
       // Update both userData (full list) and filteredUsers (search results)
-      usersList.length = 0; // Clear and update userData reference
-      usersList.push(...updatedUsers); // Update userData to always stay current
+      courseList.length = 0; // Clear and update userData reference
+      courseList.push(...updatedCourses); // Update userData to always stay current
 
       // Apply the current search filter on the updated user list
       const filtered = updatedCourses.filter(

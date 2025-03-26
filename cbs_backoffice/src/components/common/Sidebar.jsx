@@ -8,20 +8,43 @@ import {
   ShoppingCart,
   TrendingUp,
   Users,
+  UserCircle,
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 
-const SIDEBAR_ITEMS = [
-  { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
-  { name: "Users", icon: Users, color: "#EC4899", href: "/users" },
-  { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
-  // { name: "Lessons", icon: BookOpen, color: "#10B981", href: "/lessons" },
-  { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
-  // { name: "Analytics", icon: TrendingUp, color: "#3B82F6", href: "/analytics" },
-  // { name: "Settings", icon: Settings, color: "#6EE7B7", href: "/settings" },
-];
+const userRole = JSON.parse(localStorage.getItem("role"));
+const SIDEBAR_ITEMS = [];
+if (userRole === "admin") {
+  SIDEBAR_ITEMS.push(
+    { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
+    { name: "Users", icon: Users, color: "#EC4899", href: "/users" },
+    { name: "Students", icon: Users, color: "#EC48FC", href: "/students" },
+    { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
+    { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+    { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+    {
+      name: "Account Info",
+      icon: UserCircle,
+      color: "#6366f1",
+      href: "/account-info",
+    }
+  );
+} else {
+  SIDEBAR_ITEMS.push(
+    { name: "Students", icon: Users, color: "#EC48FC", href: "/students" },
+    { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
+    { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+    { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+    {
+      name: "Account Info",
+      icon: UserCircle,
+      color: "#6366f1",
+      href: "/account-info",
+    }
+  );
+}
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);

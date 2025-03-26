@@ -31,16 +31,18 @@ const OverviewPage = () => {
         // Calculate user ratio
         const teachers = users.filter((user) => user.role === "teacher").length;
         const students = users.filter((user) => user.role === "student").length;
-
+        const admins = users.filter((user) => user.role === "admin").length;
         setStats({
           totalUsers: users.length,
           totalCourses: courses.length,
           totalBooks: books.length,
           totalteachers: teachers,
           totalstudents: students,
+          totaladmins: admins,
           userRatio: {
             teachers,
             students,
+            admins,
           },
         });
       } catch (error) {
@@ -76,6 +78,12 @@ const OverviewPage = () => {
           value={stats.totalstudents}
           color="text-indigo-500"
         />
+        <StatCard
+          icon={Users}
+          name="Total Admins"
+          value={stats.totaladmins}
+          color="text-indigo-500"
+        />
 
         {/* Total Courses */}
         <StatCard
@@ -99,6 +107,7 @@ const OverviewPage = () => {
         <UserRatioChart
           teachers={stats.userRatio.teachers}
           students={stats.userRatio.students}
+          admins={stats.userRatio.admins}
         />
       </div>
     </div>

@@ -1,9 +1,6 @@
-import { CheckCircle, Clock, DollarSign, ShoppingBag } from "lucide-react";
-import { motion } from "framer-motion";
 import { useState } from "react";
 import { GetBooks } from "../services/BookManagement";
 import Header from "../components/common/Header";
-import StatCard from "../components/common/StatCard";
 import BookList from "../components/books/BooksList";
 import { useEffect } from "react";
 
@@ -31,7 +28,6 @@ const BooksPage = () => {
       <Header title={"Books"} />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
-
         <BookList />
       </main>
     </div>
