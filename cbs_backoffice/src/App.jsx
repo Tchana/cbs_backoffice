@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
 
 import Sidebar from "./components/common/Sidebar";
-
 import OverviewPage from "./pages/OverviewPage";
 import CoursesPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
@@ -21,6 +20,7 @@ const AuthenticatedLayout = () => (
     </div>
     <Sidebar />
     <div className="flex-1 overflow-auto relative z-10">
+      
       <Routes>
         <Route path="/overview" element={<OverviewPage />} />
         <Route path="/users" element={<UsersPage />} />

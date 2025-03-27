@@ -5,9 +5,11 @@ import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import LessonsTable from "../components/lessons/LessonsTable";
 import { GetCourses } from "../services/CourseManagement";
+import LoadingSpinner from "../components/common/LoadingSpinner";
 
 const LessonsPage = () => {
   const [LessonsStats, setLessonsStats] = useState({ totalLessons: 0 });
+  const [isLoading, setIsLoading] = useState(true);
 
   // Function to update stats
   const updateLessonsStats = (lessons) => {
@@ -22,10 +24,21 @@ const LessonsPage = () => {
         updateLessonsStats(lessons);
       } catch (error) {
         console.error("Error fetching courses:", error);
+      } finally {
+        setIsLoading(false);
       }
     };
     fetchLessons();
   }, []);
+
+  if (isLoading) {
+    return (
+      <div className="flex-1 overflow-auto relative z-10">
+        <Header title="Lessons" />
+        <LoadingSpinner fullScreen />
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1 overflow-auto relative z-10">

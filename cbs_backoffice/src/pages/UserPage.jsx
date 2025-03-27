@@ -38,13 +38,10 @@ const UsersPage = () => {
       <Header title="Users" />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
-
         <UsersTable updateUserStats={updateUserStats} />
 
         {/* USER CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-          
-        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8"></div>
       </main>
     </div>
   );

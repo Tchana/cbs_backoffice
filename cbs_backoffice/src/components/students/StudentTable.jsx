@@ -324,10 +324,11 @@ const StudentTable = ({ updateUserStats }) => {
                       <Check size={18} />
                     </button>
                   ) : (
-                    <>
+                    <div className="flex items-center justify-center space-x-2">
                       <button
                         onClick={() => handleViewUser(user)}
-                        className="text-gray-400 hover:text-gray-300 mr-2"
+                        className="text-gray-400 hover:text-gray-300"
+                        aria-label="View user details"
                       >
                         <Eye size={18} />
                       </button>
@@ -336,19 +337,21 @@ const StudentTable = ({ updateUserStats }) => {
                         <>
                           <button
                             onClick={() => handleEditClick(user)}
-                            className="text-indigo-400 hover:text-indigo-300 mr-2"
+                            className="text-indigo-400 hover:text-indigo-300"
+                            aria-label="Edit user"
                           >
                             <Edit size={18} />
                           </button>
                           <button
                             onClick={() => handleDeleteClick(user)}
                             className="text-red-400 hover:text-red-300"
+                            aria-label="Delete user"
                           >
                             <Trash2 size={18} />
                           </button>
                         </>
                       )}
-                    </>
+                    </div>
                   )}
                 </td>
               </motion.tr>

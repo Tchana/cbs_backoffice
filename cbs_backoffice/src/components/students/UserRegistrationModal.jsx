@@ -206,9 +206,8 @@ const UserRegistrationModal = ({
                   className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   required
                 >
-                  <option value="teacher">Teacher</option>
                   <option value="student">Student</option>
-                  <option value="admin">Admin</option>
+                  
                 </select>
               </div>
             </div>
