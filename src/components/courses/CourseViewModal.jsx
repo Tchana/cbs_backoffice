@@ -57,15 +57,18 @@ const CourseViewModal = ({ course, onClose }) => {
         transition={{ duration: 0.2 }}
         className="bg-gray-800 rounded-lg w-full max-w-md relative max-h-[90vh] overflow-y-auto"
       >
-        <div className="p-6">
+        {/* Fixed Close Button */}
+        <div className="sticky top-0 right-0 z-10 flex justify-end p-4 bg-gray-800">
           <button
-            className="absolute top-4 right-4 text-red-500 hover:text-red-700 transition-colors duration-200"
+            className="text-red-500 hover:text-red-700 p-2 rounded-full hover:bg-gray-700 transition-colors duration-200"
             onClick={onClose}
             aria-label="Close modal"
           >
             <X size={24} />
           </button>
+        </div>
 
+        <div className="p-6">
           <h2 className="text-xl font-semibold text-white mb-6">
             Course Details
           </h2>
