@@ -7,5 +7,11 @@ export default defineConfig({
   server: {
     host: true, // Expose to all network interfaces
     port: 5173, // Default Vite port
-  }
+    allowedHosts: [
+      'cbs-backoffice.onrender.com',
+      'localhost',
+      '127.0.0.1',
+    ],
+  },
+  
 })
