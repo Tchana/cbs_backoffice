@@ -1,5 +1,6 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const BookRegistrationModal = ({
   onClose,
@@ -7,10 +8,10 @@ const BookRegistrationModal = ({
   editValues,
   handleInputChange,
 }) => {
-  return (
+  return createPortal(
     <AnimatePresence>
       <motion.div
-        className="fixed inset-0 z-[99999] flex items-center justify-center"
+        className="fixed inset-0 z-[9999] flex items-center justify-center"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
@@ -26,7 +27,7 @@ const BookRegistrationModal = ({
 
         {/* Modal */}
         <motion.div
-          className="bg-gray-800 rounded-xl p-6 w-full max-w-md relative z-10"
+          className="bg-gray-800 rounded-xl p-6 w-full max-w-md relative z-[10000]"
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.95, opacity: 0 }}
@@ -137,7 +138,8 @@ const BookRegistrationModal = ({
           </div>
         </motion.div>
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 

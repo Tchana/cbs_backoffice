@@ -1,8 +1,9 @@
 const API_URL = "https://mardoche.pythonanywhere.com";
 
 export const CreateCourse = async (
+  coverImage,
   teacherFirstName,
-  teacherlastName,
+  teacherLastName,
   title,
   description,
   level
@@ -18,13 +19,18 @@ export const CreateCourse = async (
   });
 
   const teachersData = await teacherResponse.json();
-
   const teacherData = teachersData.filter(
     (user) =>
-      user.firstName === teacherFirstName && user.lastName === teacherlastName
+      user.firstName === teacherFirstName && user.lastName === teacherLastName
   );
+
+  if (!teacherData.length) {
+    throw new Error("Teacher not found");
+  }
+
   const teacherId = teacherData[0].uuid;
   const formData = new FormData();
+  formData.append("courseCover", coverImage);
   formData.append("teacher", teacherId);
   formData.append("title", title);
   formData.append("description", description);

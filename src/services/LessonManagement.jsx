@@ -27,3 +27,41 @@ export const CreateLesson = async (
   }
   return await response.json();
 };
+
+export const DeleteLesson = async (lessonId) => {
+  const Token = localStorage.getItem("authToken");
+
+  const response = await fetch(`${API_URL}/lesson/del/${lessonId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Token ${Token}`,
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(JSON.stringify(await response.json()));
+  }
+  return await response.json();
+};
+
+export const EditLesson = async (lessonId, title, description, file) => {
+  const Token = localStorage.getItem("authToken");
+  const formData = new FormData();
+
+  if (title) formData.append("title", title);
+  if (description) formData.append("description", description);
+  if (file) formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/lesson/edit/${lessonId}`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Token ${Token}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error(JSON.stringify(await response.json()));
+  }
+  return await response.json();
+};

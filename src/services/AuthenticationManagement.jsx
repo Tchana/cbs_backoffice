@@ -57,11 +57,9 @@ export const signup = async (
   }
 };
 
-
 export const updatePassword = async (email, password) => {
   const response = await fetch(`${API_URL}/update-password`, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
 };
-

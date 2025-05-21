@@ -4,8 +4,8 @@ import { GetUsers } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
 import { editUser, deleteUser } from "../../services/UsersManagement";
 import { signup } from "../../services/AuthenticationManagement";
-import UserRegistrationModal from "./UserRegistrationModal";
-import UserViewModal from "./UserViewModal";
+import StudentRegistrationModal from "./StudentRegistrationModal";
+import StudentViewModal from "./StudentViewModal";
 
 const StudentTable = ({ updateUserStats }) => {
   const [usersList, setUsersList] = useState([]);
@@ -246,7 +246,7 @@ const StudentTable = ({ updateUserStats }) => {
       {/* Registration Modal */}
       <AnimatePresence>
         {registerUserId && (
-          <UserRegistrationModal
+          <StudentRegistrationModal
             onClose={handleCloseModal}
             onRegister={handleConfirmRegistration}
             editValues={editValues}
@@ -259,7 +259,7 @@ const StudentTable = ({ updateUserStats }) => {
       {/* View User Modal */}
       <AnimatePresence>
         {viewingUser && (
-          <UserViewModal user={viewingUser} onClose={handleCloseViewModal} />
+          <StudentViewModal user={viewingUser} onClose={handleCloseViewModal} />
         )}
       </AnimatePresence>
 

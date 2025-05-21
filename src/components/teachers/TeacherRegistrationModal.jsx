@@ -3,7 +3,7 @@ import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 
-const UserRegistrationModal = ({
+const TeacherRegistrationModal = ({
   onClose,
   onRegister,
   editValues,
@@ -227,4 +227,4 @@ const UserRegistrationModal = ({
   );
 };
 
-export default UserRegistrationModal;
+export default TeacherRegistrationModal;

@@ -3,7 +3,7 @@ import { X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
 
-const UserViewModal = ({ user, onClose }) => {
+const StudentViewModal = ({ user, onClose }) => {
   if (!user) return null;
 
   // Prevent body scroll when modal is open
@@ -46,7 +46,7 @@ const UserViewModal = ({ user, onClose }) => {
           </div>
 
           <h2 className="text-xl font-semibold text-white mb-6">
-            User Details
+            Student Details
           </h2>
 
           <div className="space-y-6">
@@ -90,26 +90,14 @@ const UserViewModal = ({ user, onClose }) => {
                 <p className="text-gray-400 text-sm">
                   Member since: {new Date(user.createdAt).toLocaleDateString()}
                 </p>
-                {user.role === "teacher" && (
-                  <div>
-                    <label className="text-gray-400 text-sm block">
-                      Courses
-                    </label>
-                    <p className="text-white">
-                      {user.courses?.length || 0} active courses
-                    </p>
-                  </div>
-                )}
-                {user.role === "student" && (
-                  <div>
-                    <label className="text-gray-400 text-sm block">
-                      Enrolled In
-                    </label>
-                    <p className="text-white">
-                      {user.enrollments?.length || 0} courses
-                    </p>
-                  </div>
-                )}
+                <div>
+                  <label className="text-gray-400 text-sm block">
+                    Enrolled In
+                  </label>
+                  <p className="text-white">
+                    {user.enrollments?.length || 0} courses
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -120,4 +108,4 @@ const UserViewModal = ({ user, onClose }) => {
   );
 };
 
-export default UserViewModal;
+export default StudentViewModal;

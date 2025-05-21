@@ -64,6 +64,7 @@ const CoursesTable = ({ updateCourseStats }) => {
   const handleCourseCreationClick = () => {
     setRegistrationUserId(true);
     setEditValues({
+      coverImage: null,
       title: "",
       description: "",
       level: "",
@@ -79,16 +80,23 @@ const CoursesTable = ({ updateCourseStats }) => {
   };
 
   // Confirm Registration
-  const handleConfirmRegistration = async () => {
+  const handleConfirmRegistration = async (
+    coverImage,
+    teacherFirstName,
+    teacherLastName,
+    title,
+    description,
+    level
+  ) => {
     try {
       await CreateCourse(
-        editValues.teacherFirstName,
-        editValues.teacherLastName,
-        editValues.title,
-        editValues.description,
-        editValues.level
+        coverImage,
+        teacherFirstName,
+        teacherLastName,
+        title,
+        description,
+        level
       );
-
       const updatedCourses = await GetCourses();
       setFilteredCourses(updatedCourses);
       updateCourseStats(updatedCourses);
