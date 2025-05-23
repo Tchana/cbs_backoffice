@@ -78,7 +78,7 @@ export const Select = styled.select`
 `;
 
 export const Button = styled.button`
-    background-color: #512da8;
+    background-color: #6610F2;
     color: #fff;
     font-size: 12px;
     padding: 10px 45px;
@@ -91,7 +91,7 @@ export const Button = styled.button`
     cursor: pointer;
     transition: background-color 0.2s ease-in-out, transform 0.1s;
     &:active {
-        background-color: #3d1c91;
+        background-color: #4d0cb5;
         transform: scale(0.98);
     }
 `;
@@ -102,7 +102,7 @@ export const GhostButton = styled(Button)`
 `;
 
 export const Anchor = styled.a`
-    color: #333;
+    color: #291F1E;
     font-size: 13px;
     text-decoration: none;
     margin: 15px 0 10px;
@@ -122,7 +122,7 @@ export const OverlayContainer = styled.div`
 `;
 
 export const Overlay = styled.div`
-    background: linear-gradient(to right, #5c6bc0, #512da8);
+    background: linear-gradient(to right, #6610F2, #4d0cb5);
     color: #fff;
     position: relative;
     left: -100%;
