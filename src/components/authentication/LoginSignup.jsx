@@ -95,7 +95,7 @@ function AuthPage() {
         formData.role
       );
 
-      // Show approval message for admin and teacher roles
+      // Show approval message for teacher roles
       if (formData.role === "teacher") {
         setShowApprovalModal(true);
       } else {
@@ -259,9 +259,9 @@ function AuthPage() {
               <Components.Paragraph>
                 To keep connected with us please login with your personal info
               </Components.Paragraph>
-              <Components.GhostButton onClick={handleToggle}>
+              {/* <Components.GhostButton onClick={handleToggle}>
                 Sign Up
-              </Components.GhostButton>
+              </Components.GhostButton> */}
             </Components.RightOverlayPanel>
           </Components.Overlay>
         </Components.OverlayContainer>
