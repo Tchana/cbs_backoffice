@@ -11,7 +11,8 @@ export default defineConfig({
       'cbs-backoffice.onrender.com',
       'localhost',
       '127.0.0.1',
+      'cbs-backoffice-itty.onrender.com'
     ],
   },
-  
+
 })
