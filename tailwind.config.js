@@ -6,9 +6,9 @@ const themes = {
     theme: {
         extend: {
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
-                serif: ['Merriweather', 'Georgia', 'serif'],
-                mono: ['JetBrains Mono', 'monospace'],
+                sans: ['Poppins'],
+                serif: ['Poppins'],
+                mono: ['Poppins'],
             },
             colors: {
                 primary: {
@@ -52,5 +52,8 @@ const themes = {
     },
     plugins: [],
 }
+
+// The font-family for the entire project is controlled by the FONT_FAMILY variable in src/constants/font.js
+// To change the font globally, update that variable and ensure this config matches.
 
 export default themes

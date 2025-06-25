@@ -1,5 +1,6 @@
 import styled from 'styled-components';
 import themes from "../../../tailwind.config.js"
+import { FONT_FAMILY } from '../../constants/font';
 
 export const Container = styled.div`
     background-color: #F5F3FF;
@@ -13,6 +14,7 @@ export const Container = styled.div`
     width: 768px;
     max-width: 100%;
     min-height: 480px;
+    font-family: ${FONT_FAMILY};
 `;
 
 export const SignUpContainer = styled.div`
