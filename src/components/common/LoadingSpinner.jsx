@@ -11,7 +11,7 @@ const LoadingSpinner = ({ fullScreen = false }) => {
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.3 }}
-        className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-purple-500"
+        className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-50"
       />
     </div>
   );

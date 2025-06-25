@@ -1,7 +1,8 @@
 import styled from 'styled-components';
+import themes from "../../../tailwind.config.js"
 
 export const Container = styled.div`
-    background-color: #fff;
+    background-color: #F5F3FF;
     border-radius: 30px;
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.35);
     position: absolute;
@@ -42,7 +43,7 @@ export const SignInContainer = styled.div`
 `;
 
 export const Form = styled.form`
-    background-color: #fff;
+    background-color: #F5F3FF;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -57,7 +58,7 @@ export const Title = styled.h1`
 `;
 
 export const Input = styled.input`
-    background-color: #eee;
+    background-color: #EDE9FE;
     border: none;
     margin: 8px 0;
     padding: 10px 15px;
@@ -66,8 +67,9 @@ export const Input = styled.input`
     width: 100%;
     outline: none;
 `;
+
 export const Select = styled.select`
-    background-color: #eee;
+    background-color: #EDE9FE;
     border: none;
     margin: 8px 0;
     padding: 10px 15px;
@@ -78,8 +80,8 @@ export const Select = styled.select`
 `;
 
 export const Button = styled.button`
-    background-color: #6610F2;
-    color: #fff;
+    background-color: ${themes.theme.extend.colors.secondary[500]};
+    color: #FFFFFF;
     font-size: 12px;
     padding: 10px 45px;
     border: 1px solid transparent;
@@ -91,14 +93,14 @@ export const Button = styled.button`
     cursor: pointer;
     transition: background-color 0.2s ease-in-out, transform 0.1s;
     &:active {
-        background-color: #4d0cb5;
+        background-color: ${themes.theme.extend.colors.secondary[400]};
         transform: scale(0.98);
     }
 `;
 
 export const GhostButton = styled(Button)`
     background-color: transparent;
-    border-color: #fff;
+    border-color: #FFFFFF;
 `;
 
 export const Anchor = styled.a`
@@ -122,8 +124,8 @@ export const OverlayContainer = styled.div`
 `;
 
 export const Overlay = styled.div`
-    background: linear-gradient(to right, #6610F2, #4d0cb5);
-    color: #fff;
+    background: linear-gradient(to right, ${themes.theme.extend.colors.primary[500]}, ${themes.theme.extend.colors.secondary[500]});
+    color: #FFFFFF;
     position: relative;
     left: -100%;
     height: 100%;
