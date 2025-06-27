@@ -98,6 +98,7 @@ const CoursesTable = ({ updateCourseStats }) => {
         level
       );
       const updatedCourses = await GetCourses();
+      setCourseList(updatedCourses); // Ensure main list is updated
       setFilteredCourses(updatedCourses);
       updateCourseStats(updatedCourses);
       setRegistrationUserId(false);

@@ -10,6 +10,7 @@ import TeacherPage from "./pages/TeacherPage";
 import BooksPage from "./pages/BooksPage";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
+import { WhoAmI } from "./services/AccountInfoManagement";
 
 // Layout component for authenticated routes
 const AuthenticatedLayout = () => (
@@ -40,7 +41,7 @@ function App() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const authToken = localStorage.getItem("authToken");
       const authStatus = localStorage.getItem("auth") === "true";
 
@@ -50,6 +51,15 @@ function App() {
       if (!authStatus || !authToken) {
         localStorage.removeItem("authToken");
         localStorage.setItem("auth", "false");
+      } else {
+        // Check if user exists server-side
+        try {
+          await WhoAmI();
+        } catch (err) {
+          // User does not exist or token invalid
+          localStorage.clear();
+          window.location.reload();
+        }
       }
     };
 
