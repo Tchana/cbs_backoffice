@@ -301,7 +301,6 @@ const CoursesTable = ({ updateCourseStats }) => {
                 <tr>
                   {[
                     "Title",
-                    "Description",
                     "Level",
                     "Teacher's Name",
                     "N° of Lessons",
@@ -326,7 +325,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                     transition={{ duration: 0.3 }}
                     ref={editingCourseId === course.id ? editRowRef : null}
                   >
-                    {["title", "description", "level", "teacher"].map(
+                    {["title", "level", "teacher"].filter(field => field !== "description").map(
                       (field) => (
                         <td key={field} className="px-6 py-4 whitespace-nowrap">
                           {editingCourseId === course.id ? (
