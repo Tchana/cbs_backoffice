@@ -9,10 +9,11 @@ import {
   TrendingUp,
   Users,
   UserCircle,
+  DoorOpen
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const userRole = JSON.parse(localStorage.getItem("role"));
 const SIDEBAR_ITEMS = [];
@@ -48,6 +49,12 @@ if (userRole === "admin") {
 
 const Sidebar = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/login");
+  };
 
   return (
     <motion.div
@@ -91,6 +98,30 @@ const Sidebar = () => {
             </Link>
           ))}
         </nav>
+        {/* Logout Button */}
+        <div className="p-4">
+          <motion.div
+            className="flex items-center p-4 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors mb-2 cursor-pointer"
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleLogout}
+          >
+            <DoorOpen size={20} style={{ color: '#EF4444', minWidth: '20px' }} />
+            <AnimatePresence>
+              {isSidebarOpen && (
+                <motion.span
+                  className="ml-4 whitespace-nowrap"
+                  initial={{ opacity: 0, width: 0 }}
+                  animate={{ opacity: 1, width: 'auto' }}
+                  exit={{ opacity: 0, width: 0 }}
+                  transition={{ duration: 0.2, delay: 0.3 }}
+                >
+                  Logout
+                </motion.span>
+              )}
+            </AnimatePresence>
+          </motion.div>
+        </div>
       </div>
     </motion.div>
   );
