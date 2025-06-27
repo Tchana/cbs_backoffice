@@ -53,7 +53,7 @@ const Sidebar = () => {
 
   const handleLogout = () => {
     localStorage.clear();
-    navigate("/login");
+    window.location.reload();
   };
 
   return (
