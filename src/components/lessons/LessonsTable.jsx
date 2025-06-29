@@ -1,72 +1,76 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useInstantLayoutTransition } from "framer-motion";
-import { Users } from "../../services/UsersManagement";
-import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-react";
+import { GetUsers } from "../../services/UsersManagement";
 import { editUser, deleteUser } from "../../services/UsersManagement";
 import { CreateLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 
 const LessonsTable = ({ updateLessonsStats }) => {
   const [lessonsList, setLessonsList] = useState([]);
-
-  const getLessons = async (courselist) => {
-    const courses = await GetCourses();
-    courses.forEach((course) => {
-      console.log(course);
-      // course.lesson.forEach(lesson => {
-      //   console.log(lesson)
-      // });
-
-      setLessonsList([...course.lessons]);
-    });
-  };
-
   const [allCourses, setAllCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filteredLessons, setFilteredLessons] = useState(lessonsList);
+  const [filteredLessons, setFilteredLessons] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [pageInput, setPageInput] = useState(""); // For "Go to Page"
-  const [deletingUserId, setDeletingUserId] = useState(null);
-  const [registerUserId, setRegistrationLessonId] = useState(false);
-  const [editingUserId, setEditingUserId] = useState(null);
+  const [pageInput, setPageInput] = useState("");
+  const [deletingLessonId, setDeletingLessonId] = useState(null);
+  const [registerLessonId, setRegistrationLessonId] = useState(false);
+  const [editingLessonId, setEditingLessonId] = useState(null);
   const [selectedValues, setSelectedValues] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
-  const usersPerPage = 5;
+  const lessonsPerPage = 10;
+
+  // Refresh data function
+  const refreshData = async () => {
+    await fetchLessons();
+    updateLessonsStats(lessonsList);
+  };
+
+  // Fetch lessons from all courses
+  const fetchLessons = async () => {
+    try {
+      const courses = await GetCourses();
+      setAllCourses(courses);
+      
+      // Extract all lessons from all courses
+      const allLessons = courses.flatMap(course => 
+        course.lessons ? course.lessons.map(lesson => ({
+          ...lesson,
+          courseTitle: course.title,
+          courseId: course.id
+        })) : []
+      );
+      
+      setLessonsList(allLessons);
+      setFilteredLessons(allLessons);
+    } catch (error) {
+      console.error("Error fetching lessons:", error);
+    }
+  };
 
   useEffect(() => {
-    const fetchData = async () => {
-      setLessonsList([]);
-      getLessons();
-      setFilteredLessons(lessonsList); // Ensure filteredCourses is updated
-    };
-    fetchData();
+    fetchLessons();
   }, []);
 
-  // ** Search Functionality **
+  // Search functionality
   useEffect(() => {
     if (!searchTerm) {
       setFilteredLessons(lessonsList);
     } else {
       const filtered = lessonsList.filter(
         (lesson) =>
-          lesson.title.toLowerCase().includes(term) ||
-          lesson.description.toLowerCase().includes(term) ||
-          lesson.level.toLowerCase().includes(term) ||
-          `${lesson.teacher.firstName} ${lesson.teacher.lastName}`
-            .toLowerCase()
-            .includes(term)
+          lesson.title?.toLowerCase().includes(searchTerm) ||
+          lesson.description?.toLowerCase().includes(searchTerm) ||
+          lesson.courseTitle?.toLowerCase().includes(searchTerm)
       );
-
       setFilteredLessons(filtered);
     }
+    setCurrentPage(1); // Reset to first page when searching
   }, [searchTerm, lessonsList]);
 
-  // ** Search Functionality **
   const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    setCurrentPage(1); // Reset to first page after filtering
+    setSearchTerm(e.target.value.toLowerCase());
   };
 
   // Start registering
@@ -80,11 +84,17 @@ const LessonsTable = ({ updateLessonsStats }) => {
     });
   };
 
+  // Close modal
+  const handleCloseModal = () => {
+    setRegistrationLessonId(false);
+    setSelectedValues({});
+  };
+
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
       if (selectedValues.course === "Select a Course") {
-        throw Error("Please select a course");
+        throw new Error("Please select a course");
       }
 
       await CreateLesson(
@@ -94,9 +104,9 @@ const LessonsTable = ({ updateLessonsStats }) => {
         selectedValues.file || ""
       );
 
-      const updatedUsers = await GetUsers(); // Pay attention to not forget to get the lessons after the update is been made in the lesson list
-      setFilteredLessons(updatedUsers);
-      updateLessonsStats(updatedUsers);
+      // Refresh lessons data
+      await fetchLessons();
+      updateLessonsStats(lessonsList);
       setRegistrationLessonId(false);
     } catch (error) {
       console.error("Error Creating Lesson:", error);
@@ -105,9 +115,9 @@ const LessonsTable = ({ updateLessonsStats }) => {
 
   // Start Editing
   const handleEditClick = (lesson) => {
-    setEditingUserId(lesson.id);
+    setEditingLessonId(lesson.id);
     setSelectedValues({
-      course: lesson.course,
+      course: lesson.courseId,
       title: lesson.title,
       description: lesson.description,
       file: lesson.file,
@@ -124,65 +134,52 @@ const LessonsTable = ({ updateLessonsStats }) => {
   };
 
   // Confirm Edits
-  const handleConfirmEdit = async (userId) => {
-    await editUser(
-      userId,
-      selectedValues.email,
-      selectedValues.firstName,
-      selectedValues.lastName,
-      selectedValues.role
-    );
+  const handleConfirmEdit = async (lessonId) => {
+    try {
+      await editUser(
+        lessonId,
+        selectedValues.email,
+        selectedValues.firstName,
+        selectedValues.lastName,
+        selectedValues.role
+      );
 
-    const updatedUsers = await GetUsers();
-    setFilteredLessons(updatedUsers); // Update local filtered state
-    updateLessonsStats(updatedUsers); // Update the stats
-    setEditingUserId(null);
+      // Refresh lessons data
+      await fetchLessons();
+      updateLessonsStats(lessonsList);
+      setEditingLessonId(null);
+    } catch (error) {
+      console.error("Error updating lesson:", error);
+    }
   };
 
-  //Start Deleting
-  const handleDeleteClick = (user) => {
-    setDeletingUserId(user.id);
+  // Start Deleting
+  const handleDeleteClick = (lesson) => {
+    setDeletingLessonId(lesson.id);
   };
 
   // Confirm Delete
-  const handleConfirmDelete = async (userId) => {
+  const handleConfirmDelete = async (lessonId) => {
     try {
-      await deleteUser(userId); // API call to delete user
+      await deleteUser(lessonId);
 
-      // Fetch the latest list of users from the API
-      const updatedUsers = await GetUsers();
-
-      // Update both userData (full list) and filteredUsers (search results)
-      lessonsList.length = 0; // Clear and update userData reference
-      lessonsList.push(...updatedUsers); // Update userData to always stay current
-
-      // Apply the current search filter on the updated user list
-      const filtered = updatedUsers.filter(
-        (lesson) =>
-          lesson.firstName.toLowerCase().includes(searchTerm) ||
-          lesson.lastName.toLowerCase().includes(searchTerm) ||
-          lesson.email.toLowerCase().includes(searchTerm) ||
-          lesson.role.toLowerCase().includes(searchTerm)
-      );
-
-      setFilteredLessons(filtered); // Update the displayed list
-      updateLessonsStats(updatedUsers); // Update statistics
+      // Refresh lessons data
+      await fetchLessons();
+      updateLessonsStats(lessonsList);
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Error deleting lesson:", error);
     }
 
-    setDeletingUserId(null); // Reset delete state
+    setDeletingLessonId(null);
   };
 
-  // Compute paginated users
-  const indexOfLastLesson = currentPage * usersPerPage;
-  const indexOfFirstLesson = indexOfLastLesson - usersPerPage;
-  const paginatedLessons = searchTerm
-    ? filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson)
-    : lessonsList.slice(indexOfFirstLesson, indexOfLastLesson);
+  // Compute paginated lessons
+  const indexOfLastLesson = currentPage * lessonsPerPage;
+  const indexOfFirstLesson = indexOfLastLesson - lessonsPerPage;
+  const paginatedLessons = filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson);
 
   // Pagination
-  const totalPages = Math.ceil(filteredLessons.length / usersPerPage);
+  const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
 
   const handleNextPage = () => {
     if (currentPage < totalPages) {
@@ -209,15 +206,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
     setPageInput("");
   };
 
-  useEffect(() => {
-    const fetchLessons = async () => {
-      const course = await GetCourses(); // Fetch all users
-      const courseDropDown = [{ title: "Select a Course", id: 0 }, ...course];
-      setAllCourses(courseDropDown);
-    };
-    fetchLessons();
-  }, [searchTerm]);
-
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
@@ -237,22 +225,31 @@ const LessonsTable = ({ updateLessonsStats }) => {
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
-        {!registerUserId && (
-          <button
-            onClick={handleRegistrationClick}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            <Plus size={30} />
-          </button>
+        {!registerLessonId && (
+          <div className="flex gap-2">
+            <button
+              onClick={refreshData}
+              className="text-green-400 hover:text-green-300"
+              title="Refresh data"
+            >
+              <RefreshCw size={24} />
+            </button>
+            <button
+              onClick={handleRegistrationClick}
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              <Plus size={30} />
+            </button>
+          </div>
         )}
       </div>
 
       {/* Registration Form */}
-      {registerUserId && (
+      {registerLessonId && (
         <div className="bg-gray-700 p-4 rounded-md space-y-3 flex flex-col">
           <button
             className="absolute top-10 right-9 text-red-500 hover:text-red-700"
-            onClick={() => setRegistrationLessonId(false)} // Cancel registration
+            onClick={handleCloseModal} // Cancel registration
           >
             <X size={24} />
           </button>
@@ -270,7 +267,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
             }}
             className="block w-full p-2 rounded-md bg-gray-800 text-white"
           >
-            {courseDropDown.map((course) => (
+            {allCourses.map((course) => (
               <option key={course.id} value={`${course.title}`}>
                 {`${course.title}`}
               </option>
@@ -311,7 +308,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              {["First Name", "Last Name", "Email", "Role", "Actions"].map(
+              {["Title", "Description", "Course", "Actions"].map(
                 (heading) => (
                   <th
                     key={heading}
@@ -325,42 +322,42 @@ const LessonsTable = ({ updateLessonsStats }) => {
           </thead>
 
           <tbody className="divide-y divide-gray-700">
-            {paginatedLessons.map((user) => (
+            {paginatedLessons.map((lesson) => (
               <motion.tr
-                key={user.id}
+                key={lesson.id}
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                ref={editingUserId === user.id ? editRowRef : null}
+                ref={editingLessonId === lesson.id ? editRowRef : null}
               >
-                {["firstName", "lastName", "email", "role"].map((field) => (
+                {["title", "description", "courseTitle"].map((field) => (
                   <td key={field} className="px-6 py-4 whitespace-nowrap">
-                    {editingUserId === user.id ? (
+                    {editingLessonId === lesson.id ? (
                       <input
                         type="text"
-                        defaultValue={user[field]}
+                        defaultValue={lesson[field]}
                         onChange={(e) => handleInputChange(e, field)}
                         className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
                       />
                     ) : (
                       <div className="text-sm font-medium text-gray-100">
-                        {user[field]}
+                        {lesson[field]}
                       </div>
                     )}
                   </td>
                 ))}
                 <td className="px-6 py-4 text-sm text-gray-300">
-                  {editingUserId === user.id ? (
+                  {editingLessonId === lesson.id ? (
                     <button
-                      onClick={() => handleConfirmEdit(user.id)}
+                      onClick={() => handleConfirmEdit(lesson.id)}
                       ref={confirmButtonRef}
                       className="text-green-400 hover:text-green-300"
                     >
                       <Check size={18} />
                     </button>
-                  ) : deletingUserId === user.id ? (
+                  ) : deletingLessonId === lesson.id ? (
                     <button
-                      onClick={() => handleConfirmDelete(user.id)}
+                      onClick={() => handleConfirmDelete(lesson.id)}
                       ref={confirmButtonRef}
                       className="text-green-400 hover:text-green-300"
                     >
@@ -369,13 +366,13 @@ const LessonsTable = ({ updateLessonsStats }) => {
                   ) : (
                     <>
                       <button
-                        onClick={() => handleEditClick(user)}
+                        onClick={() => handleEditClick(lesson)}
                         className="text-indigo-400 hover:text-indigo-300 mr-2"
                       >
                         <Edit size={18} />
                       </button>
                       <button
-                        onClick={() => handleDeleteClick(user)}
+                        onClick={() => handleDeleteClick(lesson)}
                         className="text-red-400 hover:text-red-300"
                       >
                         <Trash2 size={18} />

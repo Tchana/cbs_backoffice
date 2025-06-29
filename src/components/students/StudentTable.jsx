@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { GetUsers } from "../../services/UsersManagement";
-import { Edit, Search, Trash2, Check, Plus, X, Eye } from "lucide-react";
+import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-react";
 import { editUser, deleteUser } from "../../services/UsersManagement";
 import { signup } from "../../services/AuthenticationManagement";
 import StudentRegistrationModal from "./StudentRegistrationModal";
@@ -22,6 +22,15 @@ const StudentTable = ({ updateUserStats }) => {
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
   const userRole = JSON.parse(localStorage.getItem("role"));
+
+  // Refresh data function
+  const refreshData = async () => {
+    const users = await GetUsers();
+    const studentUsers = users.filter((user) => user.role === "student");
+    setUsersList(studentUsers);
+    setFilteredUsers(studentUsers);
+    updateUserStats(studentUsers);
+  };
 
   const fetchUsers = async () => {
     const users = await GetUsers();
@@ -79,8 +88,10 @@ const StudentTable = ({ updateUserStats }) => {
       );
 
       const updatedUsers = await GetUsers();
-      setFilteredUsers(updatedUsers.filter((user) => user.role === "student"));
-      updateUserStats(updatedUsers.filter((user) => user.role === "student"));
+      const studentUsers = updatedUsers.filter((user) => user.role === "student");
+      setUsersList(studentUsers); // Update the main users list
+      setFilteredUsers(studentUsers);
+      updateUserStats(studentUsers);
       setRegistrationUserId(false);
     } catch (error) {
       console.error("Error registering user:", error);
@@ -118,8 +129,10 @@ const StudentTable = ({ updateUserStats }) => {
     );
 
     const updatedUsers = await GetUsers();
-    setFilteredUsers(updatedUsers.filter((user) => user.role === "student")); // Update local filtered state
-    updateUserStats(updatedUsers.filter((user) => user.role === "student")); // Update the stats
+    const studentUsers = updatedUsers.filter((user) => user.role === "student");
+    setUsersList(studentUsers); // Update the main users list
+    setFilteredUsers(studentUsers); // Update local filtered state
+    updateUserStats(studentUsers); // Update the stats
     setEditingUserId(null);
   };
 
@@ -135,13 +148,13 @@ const StudentTable = ({ updateUserStats }) => {
 
       // Fetch the latest list of users from the API
       const updatedUsers = await GetUsers();
+      const studentUsers = updatedUsers.filter((user) => user.role === "student");
 
-      // Update both userData (full list) and filteredUsers (search results)
-      usersList.length = 0; // Clear and update userData reference
-      usersList.push(...updatedUsers.filter((user) => user.role === "student")); // Update userData to always stay current
+      // Update both usersList (full list) and filteredUsers (search results)
+      setUsersList(studentUsers); // Update the main users list
 
       // Apply the current search filter on the updated user list
-      const filtered = updatedUsers.filter(
+      const filtered = studentUsers.filter(
         (user) =>
           user.firstName.toLowerCase().includes(searchTerm) ||
           user.lastName.toLowerCase().includes(searchTerm) ||
@@ -150,7 +163,7 @@ const StudentTable = ({ updateUserStats }) => {
       );
 
       setFilteredUsers(filtered); // Update the displayed list
-      updateUserStats(updatedUsers.filter((user) => user.role === "student")); // Update statistics
+      updateUserStats(studentUsers); // Update statistics
     } catch (error) {
       console.error("Error deleting user:", error);
     }
@@ -235,12 +248,21 @@ const StudentTable = ({ updateUserStats }) => {
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
-        <button
-          onClick={handleRegistrationClick}
-          className="text-indigo-400 hover:text-indigo-300"
-        >
-          <Plus size={30} />
-        </button>
+        <div className="flex gap-2">
+          <button
+            onClick={refreshData}
+            className="text-green-400 hover:text-green-300"
+            title="Refresh data"
+          >
+            <RefreshCw size={24} />
+          </button>
+          <button
+            onClick={handleRegistrationClick}
+            className="text-indigo-400 hover:text-indigo-300"
+          >
+            <Plus size={30} />
+          </button>
+        </div>
       </div>
 
       {/* Registration Modal */}
