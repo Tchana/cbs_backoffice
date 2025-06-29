@@ -61,13 +61,17 @@ const BookRegistrationModal = ({
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Category
               </label>
-              <input
-                type="text"
+              <select
                 value={editValues.category || ""}
                 onChange={(e) => handleInputChange(e, "category")}
                 className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter book category"
-              />
+              >
+                <option value="">Select a category</option>
+                <option value="bible">Bible</option>
+                <option value="commentary">Commentary</option>
+                <option value="dictionary">Dictionary</option>
+                <option value="random">Random</option>
+              </select>
             </div>
 
             <div>
