@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit, Search, Trash2, Check, Plus, Eye } from "lucide-react";
+import { Edit, Search, Trash2, Check, Plus, Eye, RefreshCw } from "lucide-react";
 import { GetUsers } from "../../services/UsersManagement";
 import {
   GetCourses,
@@ -26,6 +26,14 @@ const CoursesTable = ({ updateCourseStats }) => {
   const confirmButtonRef = useRef(null);
   const coursesPerPage = 10;
   const [viewingCourse, setViewingCourse] = useState(null);
+
+  // Refresh data function
+  const refreshData = async () => {
+    const courses = await GetCourses();
+    setCourseList(courses);
+    setFilteredCourses(courses);
+    updateCourseStats(courses);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,6 +152,7 @@ const CoursesTable = ({ updateCourseStats }) => {
     );
 
     const updatedCourses = await GetCourses();
+    setCourseList(updatedCourses); // Update the main course list
     setFilteredCourses(updatedCourses); // Update local filtered state
     updateCourseStats(updatedCourses); // Update the stats
     setEditingCourseId(null);
@@ -159,26 +168,25 @@ const CoursesTable = ({ updateCourseStats }) => {
     try {
       await deleteCourse(userId);
 
-      // Fetch the latest list of users from the API
+      // Fetch the latest list of courses from the API
       const updatedCourses = await GetCourses();
 
-      // Update both userData (full list) and filteredUsers (search results)
-      courseList.length = 0; // Clear and update userData reference
-      courseList.push(...updatedCourses); // Update userData to always stay current
+      // Update both courseList (full list) and filteredCourses (search results)
+      setCourseList(updatedCourses); // Update the main course list
 
-      // Apply the current search filter on the updated user list
+      // Apply the current search filter on the updated course list
       const filtered = updatedCourses.filter(
         (course) =>
           course.title.toLowerCase().includes(searchTerm) ||
           course.description.toLowerCase().includes(searchTerm) ||
-          course.teacher.toLowerCase().includes(searchTerm) ||
+          `${course.teacher.firstName} ${course.teacher.lastName}`.toLowerCase().includes(searchTerm) ||
           course.level.toLowerCase().includes(searchTerm)
       );
 
       setFilteredCourses(filtered); // Update the displayed list
       updateCourseStats(updatedCourses); // Update statistics
     } catch (error) {
-      console.error("Error deleting user:", error);
+      console.error("Error deleting course:", error);
     }
 
     setDeletingCourseId(null); // Reset delete state
@@ -226,7 +234,7 @@ const CoursesTable = ({ updateCourseStats }) => {
       setAllTeachers(teachers);
     };
     fetchTeachers();
-  }, [searchTerm]);
+  }, []); // Remove searchTerm dependency as it's not needed for fetching teachers
 
   // Handle View Course
   const handleViewCourse = (course) => {
@@ -262,12 +270,21 @@ const CoursesTable = ({ updateCourseStats }) => {
                 size={18}
               />
             </div>
-            <button
-              onClick={handleCourseCreationClick}
-              className="text-indigo-400 hover:text-indigo-300"
-            >
-              <Plus size={30} />
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={refreshData}
+                className="text-green-400 hover:text-green-300"
+                title="Refresh data"
+              >
+                <RefreshCw size={24} />
+              </button>
+              <button
+                onClick={handleCourseCreationClick}
+                className="text-indigo-400 hover:text-indigo-300"
+              >
+                <Plus size={30} />
+              </button>
+            </div>
           </div>
 
           {/* Registration Modal */}
