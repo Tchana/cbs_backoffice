@@ -236,7 +236,7 @@ const BookList = () => {
                       onClick={() => openBook(book.book)}
                       className="text-indigo-400 hover:text-indigo-300 mt-3 mx-auto flex justify-center"
                     >
-                      View Book
+                      Read Book
                     </button>
                   </div>
                 </div>
