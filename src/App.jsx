@@ -8,6 +8,7 @@ import UsersPage from "./pages/UserPage";
 import StudentPage from "./pages/StudentPage";
 import TeacherPage from "./pages/TeacherPage";
 import BooksPage from "./pages/BooksPage";
+import BlogsPage from "./pages/BlogsPage";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
 import { WhoAmI } from "./services/AccountInfoManagement";
@@ -29,6 +30,7 @@ const AuthenticatedLayout = () => (
         <Route path="/teachers" element={<TeacherPage />} />
         <Route path="/course" element={<CoursesPage />} />
         <Route path="/books" element={<BooksPage />} />
+        <Route path="/blogs" element={<BlogsPage />} />
         <Route path="/account-info" element={<AccountInfoPage />} />
       </Routes>
     </div>

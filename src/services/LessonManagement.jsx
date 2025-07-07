@@ -14,7 +14,7 @@ export const CreateLesson = async (
   formData.append("description", lessonDescription);
   formData.append("file", lessonFile);
 
-  const response = await fetch(`${API_URL}/lesson`, {
+  const response = await fetch(`${API_URL}/lesson/`, {
     method: "POST",
     headers: {
       Authorization: `Token ${Token}`,
@@ -31,7 +31,7 @@ export const CreateLesson = async (
 export const DeleteLesson = async (lessonId) => {
   const Token = localStorage.getItem("authToken");
 
-  const response = await fetch(`${API_URL}/lesson/del/${lessonId}`, {
+  const response = await fetch(`${API_URL}/lesson/del/${lessonId}/`, {
     method: "DELETE",
     headers: {
       Authorization: `Token ${Token}`,
@@ -52,7 +52,7 @@ export const EditLesson = async (lessonId, title, description, file) => {
   if (description) formData.append("description", description);
   if (file) formData.append("file", file);
 
-  const response = await fetch(`${API_URL}/lesson/edit/${lessonId}`, {
+  const response = await fetch(`${API_URL}/lesson/edit/${lessonId}/`, {
     method: "PUT",
     headers: {
       Authorization: `Token ${Token}`,

@@ -1,7 +1,7 @@
 const API_URL = "https://mardoche.pythonanywhere.com";
 
 export const WhoAmI = async () => {
-  const response = await fetch(`${API_URL}/user/me`, {
+  const response = await fetch(`${API_URL}/me/`, {
     headers: {
       Authorization: `Token ${localStorage.getItem("authToken")}`,
     },

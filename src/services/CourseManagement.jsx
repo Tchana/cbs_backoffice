@@ -10,7 +10,7 @@ export const CreateCourse = async (
 ) => {
   const Token = localStorage.getItem("authToken");
 
-  const teacherResponse = await fetch(`${API_URL}/user/teachers`, {
+  const teacherResponse = await fetch(`${API_URL}/user/teachers/`, {
     method: "GET",
     headers: {
       Authorization: `Token ${Token}`,
@@ -36,7 +36,7 @@ export const CreateCourse = async (
   formData.append("description", description);
   formData.append("level", level);
 
-  const response = await fetch(`${API_URL}/course`, {
+  const response = await fetch(`${API_URL}/course/`, {
     method: "POST",
     headers: {
       Authorization: `Token ${Token}`,
@@ -52,7 +52,7 @@ export const CreateCourse = async (
 
 export const GetCourses = async () => {
   const token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/course`, {
+  const response = await fetch(`${API_URL}/course/`, {
     method: "GET",
     headers: { Authorization: `Token ${token}` },
   });
@@ -74,7 +74,7 @@ export const editCourse = async (
 ) => {
   const token = localStorage.getItem("authToken");
 
-  const teacherResponse = await fetch(`${API_URL}/user/teachers`, {
+  const teacherResponse = await fetch(`${API_URL}/user/teachers/`, {
     method: "GET",
     headers: {
       Authorization: `Token ${token}`,
@@ -89,7 +89,7 @@ export const editCourse = async (
       user.firstName === teacherFirstName && user.lastName === teacherLastName
   );
   const teacherId = teacherData[0].uuid;
-  const response = await fetch(`${API_URL}/course/edit/${id}`, {
+  const response = await fetch(`${API_URL}/course/edit/${id}/`, {
     method: "PATCH",
     headers: {
       Authorization: `Token ${token}`,
@@ -113,7 +113,7 @@ export const editCourse = async (
 
 export const deleteCourse = async (id) => {
   const Token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/course/delete/${id}`, {
+  const response = await fetch(`${API_URL}/course/delete/${id}/`, {
     method: "DELETE",
     headers: {
       Authorization: `Token ${Token}`,

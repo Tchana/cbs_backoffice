@@ -2,7 +2,7 @@ const API_URL = "https://mardoche.pythonanywhere.com";
 
 export const courses = async () => {
   const token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/course/get`, {
+  const response = await fetch(`${API_URL}/course/get/`, {
     method: "GET",
     headers: {
       "Content-type": "application/json",
@@ -35,7 +35,7 @@ export const lessons = async (token) => {
   }
   let data = [];
   for (let i = 0; i < course_list.length; i++) {
-    const response = await fetch(`${API_URL}/lesson/get/${course_list[i].id}`, {
+    const response = await fetch(`${API_URL}/lesson/get/${course_list[i].id}/`, {
       method: "GET",
       headers: {
         "Content-type": "application/json",
@@ -62,7 +62,7 @@ export const lessons = async (token) => {
 };
 
 export const GetUsers = async () => {
-  const response = await fetch(`${API_URL}/user`, {
+  const response = await fetch(`${API_URL}/user/`, {
     method: "GET",
     headers: {
       Authorization: `Token ${localStorage.getItem("authToken")}`,
@@ -81,7 +81,7 @@ export const GetUsers = async () => {
 export const editUser = async (id, email, firstname, lastname, role) => {
   const token = localStorage.getItem("authToken");
 
-  const response = await fetch(`${API_URL}/user/edit/${id}`, {
+  const response = await fetch(`${API_URL}/user/edit/${id}/`, {
     method: "PATCH",
     headers: {
       Authorization: `Token ${token}`,
@@ -105,7 +105,7 @@ export const editUser = async (id, email, firstname, lastname, role) => {
 
 export const deleteUser = async (id) => {
   const token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/user/${id}`, {
+  const response = await fetch(`${API_URL}/user/${id}/`, {
     method: "DELETE",
     headers: {
       "Content-Type": "application/json",

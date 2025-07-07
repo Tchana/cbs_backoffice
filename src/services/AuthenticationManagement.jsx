@@ -1,7 +1,7 @@
 const API_URL = "https://mardoche.pythonanywhere.com";
 
 export const login = async (email, password) => {
-  const response = await fetch(`${API_URL}/login`, {
+  const response = await fetch(`${API_URL}/login/`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -11,7 +11,9 @@ export const login = async (email, password) => {
       password: password,
     }),
   });
+  console.log(response);
   if (!response.ok) {
+    console.log(response);
     throw new Error("Invalid username or password");
   }
   const data = await response.json();
@@ -37,7 +39,7 @@ export const signup = async (
   formData.append("role", role);
 
   try {
-    const response = await fetch(`${API_URL}/register`, {
+    const response = await fetch(`${API_URL}/register/`, {
       method: "POST",
       body: formData,
     });
@@ -58,7 +60,7 @@ export const signup = async (
 };
 
 export const updatePassword = async (email, password) => {
-  const response = await fetch(`${API_URL}/update-password`, {
+  const response = await fetch(`${API_URL}/update-password/`, {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });

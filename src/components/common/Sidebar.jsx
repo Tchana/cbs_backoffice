@@ -9,7 +9,8 @@ import {
   TrendingUp,
   Users,
   UserCircle,
-  DoorOpen
+  DoorOpen,
+  FileText
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -25,6 +26,7 @@ if (userRole === "admin") {
     { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
     { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
     { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+    { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     {
       name: "Account Info",
       icon: UserCircle,
@@ -38,6 +40,7 @@ if (userRole === "admin") {
     { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
     { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
     { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+    { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     {
       name: "Account Info",
       icon: UserCircle,

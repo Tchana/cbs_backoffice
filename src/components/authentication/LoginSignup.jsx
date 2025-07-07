@@ -54,28 +54,52 @@ function AuthPage() {
 
     try {
       const data = await login(formData.email, formData.password);
+      console.log("Login response:", data); // Debug: log the response
+
+      if (!data.token) {
+        setError("Login failed: No token returned from server.");
+        return;
+      }
 
       if (data.role === "student") {
-        throw new Error("Student account not allowed");
+        setError("Student account not allowed");
+        return;
       }
 
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("auth", "true");
       localStorage.setItem("role", JSON.stringify(data.role));
+      console.log("localStorage after login:", {
+        authToken: localStorage.getItem("authToken"),
+        auth: localStorage.getItem("auth"),
+        role: localStorage.getItem("role"),
+      });
 
       const userData = await GetUsers();
       const user = userData.find((user) => user.email === formData.email);
-      if (user.role === "student") {
+      if (user && user.role === "student") {
         localStorage.setItem("auth", "false");
         localStorage.removeItem("authToken");
-        throw new Error("Student account not allowed");
+        setError("Student account not allowed");
+        return;
       }
-      localStorage.setItem("role", JSON.stringify(user.role));
+      if (user) {
+        localStorage.setItem("role", JSON.stringify(user.role));
+      }
       navigate("/overview");
       navigate(0); // Refresh to apply new auth state
     } catch (error) {
       console.error("Error logging in:", error);
-      setError("Invalid email or password");
+      // Try to show the real error message from the backend if available
+      if (error.response) {
+        error.response.json().then((err) => {
+          setError(err.message || "Login failed");
+        });
+      } else if (error.message) {
+        setError(error.message);
+      } else {
+        setError("Invalid email or password");
+      }
     }
   };
 
