@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, RefreshCw } from "lucide-react";
 import { GetBooks, AddBook } from "../../services/BookManagement";
 import BookRegistrationModal from "./BookRegistrationModal";
 
@@ -21,10 +21,10 @@ const BookList = () => {
   });
 
   useEffect(() => {
-    fetchBooks();
+    refreshData();
   }, []);
 
-  const fetchBooks = async () => {
+  const refreshData = async () => {
     try {
       setIsLoading(true);
       const books = await GetBooks();
@@ -104,7 +104,7 @@ const BookList = () => {
         editValues.description,
         editValues.language
       );
-      await fetchBooks(); // Refresh the book list
+      await refreshData(); // Refresh the book list
       handleCloseModal();
     } catch (error) {
       console.error("Error adding book:", error);
@@ -154,7 +154,7 @@ const BookList = () => {
     >
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-semibold text-gray-100">Book List</h2>
-        <div className="flex items-center space-x-4">
+        <div className="flex gap-2">
           <div className="relative">
             <input
               type="text"
@@ -169,8 +169,16 @@ const BookList = () => {
             />
           </div>
           <button
+            onClick={refreshData}
+            className="text-green-400 hover:text-green-300"
+            title="Refresh data"
+          >
+            <RefreshCw size={24} />
+          </button>
+          <button
             onClick={handleRegistrationClick}
             className="text-indigo-400 hover:text-indigo-300"
+            title="Add Book"
           >
             <Plus size={30} />
           </button>
@@ -190,57 +198,58 @@ const BookList = () => {
       </AnimatePresence>
 
       <div className="overflow-x-auto p-4">
-        {filteredBooks.length === 0 ? (
-          <div className="flex justify-center items-center h-64">
-            <img
-              src="/default-image.png"
-              alt="No Books"
-              className="w-48 h-48 opacity-50"
-            />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {filteredBooks.map((book) => (
-              <motion.div
-                key={book.uuid}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.3 }}
-                className="p-4 shadow-md"
-              >
-                <div className="flex justify-center">
-                  <img
-                    src={book.bookCover || "/default-order.png"}
-                    alt={book.title}
-                    className="w-24 h-24 rounded-md bg-transparent"
-                  />
-                </div>
-                <div className="mt-4 text-center justify-center">
-                  <h3 className="text-gray-100 text-sm font-medium">
-                    {book.title}
-                  </h3>
-                  <p className="text-gray-400 text-xs">
-                    Category: {book.category}
-                  </p>
-                  {book.author && (
-                    <p className="text-gray-400 text-xs">
-                      Author: {book.author}
-                    </p>
-                  )}
-                  <p className="text-gray-300 text-sm font-semibold mt-2">
-                    Language: {book.language}
-                  </p>
-                  <button
-                    onClick={() => openBook(book.book)}
-                    className="text-indigo-400 hover:text-indigo-300 mt-3 mx-auto flex justify-center"
-                  >
-                    View Book
-                  </button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        )}
+        <table className="min-w-full divide-y divide-gray-700">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Cover</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Author</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Language</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-gray-800 divide-y divide-gray-700">
+            {filteredBooks.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="text-center py-12 text-gray-400">
+                  <div className="flex flex-col items-center justify-center">
+                    <img
+                      src="/default-image.png"
+                      alt="No Books"
+                      className="w-32 h-32 opacity-50 mb-4"
+                    />
+                    <span>No books found. Click the + button to add a new book.</span>
+                  </div>
+                </td>
+              </tr>
+            ) : (
+              filteredBooks.map((book) => (
+                <tr key={book.uuid} className="hover:bg-gray-700 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <img
+                      src={book.bookCover || "/default-order.png"}
+                      alt={book.title}
+                      className="w-16 h-16 rounded-md bg-transparent"
+                    />
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-100">{book.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.category}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.author || '-'}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.language}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <button
+                      onClick={() => openBook(book.book)}
+                      className="text-indigo-400 hover:text-indigo-300"
+                    >
+                      View Book
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
       </div>
     </motion.div>
   );

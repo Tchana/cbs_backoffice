@@ -19,7 +19,7 @@ export const AddBook = async (
   formData.append("description", description);
   formData.append("language", language);
 
-  const response = await fetch(`${API_URL}/book/add/`, {
+  const response = await fetch(`${API_URL}/book/`, {
     method: "POST",
     headers: {
       Authorization: `Token ${Token}`,
@@ -36,7 +36,7 @@ export const AddBook = async (
 export const GetBooks = async () => {
   const Token = localStorage.getItem("authToken");
 
-  const response = await fetch(`${API_URL}/book/get/`, {
+  const response = await fetch(`${API_URL}/book/`, {
     method: "GET",
     headers: {
       Authorization: `Token ${Token}`,
