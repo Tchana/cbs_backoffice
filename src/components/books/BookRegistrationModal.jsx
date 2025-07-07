@@ -70,7 +70,7 @@ const BookRegistrationModal = ({
                 <option value="bible">Bible</option>
                 <option value="commentary">Commentary</option>
                 <option value="dictionary">Dictionary</option>
-                <option value="random">Random</option>
+                <option value="other">Other</option>
               </select>
             </div>
 

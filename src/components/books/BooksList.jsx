@@ -153,7 +153,7 @@ const BookList = () => {
       transition={{ delay: 0.4 }}
     >
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold text-gray-100">Book List</h2>
+        <h2 className="text-xl font-semibold text-gray-100">Books</h2>
         <div className="flex gap-2">
           <div className="relative">
             <input
@@ -198,58 +198,52 @@ const BookList = () => {
       </AnimatePresence>
 
       <div className="overflow-x-auto p-4">
-        <table className="min-w-full divide-y divide-gray-700">
-          <thead>
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Cover</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Title</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Category</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Author</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Language</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-gray-800 divide-y divide-gray-700">
-            {filteredBooks.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-12 text-gray-400">
-                  <div className="flex flex-col items-center justify-center">
-                    <img
-                      src="/default-image.png"
-                      alt="No Books"
-                      className="w-32 h-32 opacity-50 mb-4"
-                    />
-                    <span>No books found. Click the + button to add a new book.</span>
+        {filteredBooks.length === 0 ? (
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="text-gray-400 text-6xl mb-4">📚</div>
+              <p className="text-gray-400 text-lg">No books found. Click the + button to add a new book.</p>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBooks.map((book) => (
+              <motion.div
+                key={book.uuid}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.3 }}
+                className="bg-gray-700 rounded-lg overflow-hidden shadow-lg hover:shadow-xl transition-shadow duration-300 flex flex-col"
+              >
+                {/* Book Cover */}
+                <div className="h-48 overflow-hidden flex items-center justify-center bg-gray-800">
+                  <img
+                    src={book.bookCover || "/default-order.png"}
+                    alt={book.title}
+                    className="h-full object-contain"
+                  />
+                </div>
+                {/* Book Content */}
+                <div className="p-6 flex-1 flex flex-col">
+                  <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">{book.title}</h3>
+                  <div className="flex flex-col gap-1 text-gray-400 text-sm mb-3">
+                    <span>Author: {book.author || '-'}</span>
+                    <span>Category: {book.category}</span>
+                    <span>Language: {book.language}</span>
                   </div>
-                </td>
-              </tr>
-            ) : (
-              filteredBooks.map((book) => (
-                <tr key={book.uuid} className="hover:bg-gray-700 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <img
-                      src={book.bookCover || "/default-order.png"}
-                      alt={book.title}
-                      className="w-16 h-16 rounded-md bg-transparent"
-                    />
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-100">{book.title}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.category}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.author || '-'}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-300">{book.language}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="mt-auto">
                     <button
                       onClick={() => openBook(book.book)}
-                      className="text-indigo-400 hover:text-indigo-300"
+                      className="text-indigo-400 hover:text-indigo-300 mt-3 mx-auto flex justify-center"
                     >
                       View Book
                     </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </div>
     </motion.div>
   );
