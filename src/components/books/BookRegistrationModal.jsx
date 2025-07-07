@@ -91,13 +91,15 @@ const BookRegistrationModal = ({
               <label className="block text-sm font-medium text-gray-300 mb-1">
                 Language
               </label>
-              <input
-                type="text"
+              <select
                 value={editValues.language || ""}
                 onChange={(e) => handleInputChange(e, "language")}
                 className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter book language"
-              />
+              >
+                <option value="">Select language</option>
+                <option value="Français">Français</option>
+                <option value="Anglais">Anglais</option>
+              </select>
             </div>
 
             <div>
