@@ -18,8 +18,10 @@ import {
 } from "../../services/LessonManagement";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
-const CourseViewModal = ({ course, onClose }) => {
+const CourseViewModal = ({ course, onClose, onLessonChange }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   if (!course) return null;
 
   const [isCreatingLesson, setIsCreatingLesson] = useState(false);
@@ -48,13 +50,14 @@ const CourseViewModal = ({ course, onClose }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await CreateLesson(course.id, lessonTitle, lessonDescription, lessonFile);
-      // Reset form
+      await runWithLoader(() =>
+        CreateLesson(course.id, lessonTitle, lessonDescription, lessonFile)
+      );
       setLessonTitle("");
       setLessonDescription("");
       setLessonFile(null);
       setIsCreatingLesson(false);
-      // You might want to refresh the course data here
+      onLessonChange?.();
     } catch (error) {
       console.error("Error creating lesson:", error);
     } finally {
@@ -65,9 +68,9 @@ const CourseViewModal = ({ course, onClose }) => {
   const handleDeleteLesson = async (lessonId) => {
     setIsDeleting(true);
     try {
-      await DeleteLesson(lessonId);
+      await runWithLoader(() => DeleteLesson(lessonId));
       setLessonToDelete(null);
-      // You might want to refresh the course data here
+      onLessonChange?.();
     } catch (error) {
       console.error("Error deleting lesson:", error);
     } finally {
@@ -86,17 +89,19 @@ const CourseViewModal = ({ course, onClose }) => {
   const handleEditLesson = async (lessonId) => {
     setIsEditing(true);
     try {
-      await EditLesson(
-        lessonId,
-        editTitle || undefined,
-        editDescription || undefined,
-        editFile || undefined
+      await runWithLoader(() =>
+        EditLesson(
+          lessonId,
+          editTitle || undefined,
+          editDescription || undefined,
+          editFile || undefined
+        )
       );
       setEditingLesson(null);
       setEditTitle("");
       setEditDescription("");
       setEditFile(null);
-      // You might want to refresh the course data here
+      onLessonChange?.();
     } catch (error) {
       console.error("Error editing lesson:", error);
     } finally {
@@ -164,7 +169,9 @@ const CourseViewModal = ({ course, onClose }) => {
               <div>
                 <label className="text-gray-400 text-sm">Teacher</label>
                 <p className="text-white font-medium">
-                  {`${course.teacher.firstName} ${course.teacher.lastName}`}
+                  {course.teacher
+                    ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim() || "—"
+                    : "—"}
                 </p>
               </div>
               <div className="col-span-2">

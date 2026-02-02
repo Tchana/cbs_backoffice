@@ -1,21 +1,29 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Plus, RefreshCw } from "lucide-react";
-import { GetBooks, AddBook } from "../../services/BookManagement";
+import { Search, Plus, RefreshCw, Edit, Trash2 } from "lucide-react";
+import { GetBooks, AddBook, EditBook, DeleteBook } from "../../services/BookManagement";
 import BookRegistrationModal from "./BookRegistrationModal";
 
+import { isAdmin } from "../../lib/auth";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
+
 const BookList = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [searchTerm, setSearchTerm] = useState("");
   const [bookData, setBookData] = useState([]);
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
+  const [editingBook, setEditingBook] = useState(null);
+  const [bookToDelete, setBookToDelete] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [editValues, setEditValues] = useState({
     title: "",
     category: "",
     author: "",
     language: "",
+    description: "",
     bookCover: null,
     book: null,
   });
@@ -27,7 +35,7 @@ const BookList = () => {
   const refreshData = async () => {
     try {
       setIsLoading(true);
-      const books = await GetBooks();
+      const books = await runWithLoader(() => GetBooks());
       setBookData(books);
       setFilteredBooks(books);
     } catch (err) {
@@ -58,12 +66,27 @@ const BookList = () => {
   };
 
   const handleRegistrationClick = () => {
+    setEditingBook(null);
     setIsRegistering(true);
     setEditValues({
       title: "",
       category: "",
       author: "",
       language: "",
+      description: "",
+      bookCover: null,
+      book: null,
+    });
+  };
+
+  const handleEditClick = (book) => {
+    setEditingBook(book);
+    setEditValues({
+      title: book.title ?? "",
+      category: book.category ?? "",
+      author: book.author ?? "",
+      language: book.language ?? "",
+      description: book.description ?? "",
       bookCover: null,
       book: null,
     });
@@ -71,31 +94,41 @@ const BookList = () => {
 
   const handleCloseModal = () => {
     setIsRegistering(false);
+    setEditingBook(null);
     setEditValues({
       title: "",
       category: "",
       author: "",
       language: "",
+      description: "",
       bookCover: null,
       book: null,
     });
   };
 
+  const handleDeleteClick = (book) => {
+    setBookToDelete(book.id);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!bookToDelete) return;
+    setIsDeleting(true);
+    try {
+      await runWithLoader(() => DeleteBook(bookToDelete));
+      await refreshData();
+      setBookToDelete(null);
+    } catch (err) {
+      console.error("Error deleting book:", err);
+      setError("Failed to delete book. Please try again.");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const handleConfirmRegistration = async () => {
     try {
-      // const formData = new FormData();
-      // formData.append("title", editValues.title);
-      // formData.append("category", editValues.category);
-      // formData.append("author", editValues.author);
-      // formData.append("language", editValues.language);
-      // if (editValues.bookCover) {
-      //   formData.append("bookCover", editValues.bookCover);
-      // }
-      // if (editValues.book) {
-      //   formData.append("book", editValues.book);
-      // }
-
-      await AddBook(
+      await runWithLoader(() =>
+        AddBook(
         editValues.title,
         editValues.author,
         editValues.book,
@@ -103,12 +136,36 @@ const BookList = () => {
         editValues.bookCover,
         editValues.description,
         editValues.language
+        )
       );
-      await refreshData(); // Refresh the book list
+      await refreshData();
       handleCloseModal();
-    } catch (error) {
-      console.error("Error adding book:", error);
+    } catch (err) {
+      console.error("Error adding book:", err);
       setError("Failed to add book. Please try again.");
+    }
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!editingBook) return;
+    try {
+      await runWithLoader(() =>
+        EditBook(
+        editingBook.id,
+        editValues.title,
+        editValues.author,
+        editValues.category,
+        editValues.bookCover,
+        editValues.book,
+        editValues.description,
+        editValues.language
+        )
+      );
+      await refreshData();
+      handleCloseModal();
+    } catch (err) {
+      console.error("Error editing book:", err);
+      setError("Failed to edit book. Please try again.");
     }
   };
 
@@ -175,25 +232,71 @@ const BookList = () => {
           >
             <RefreshCw size={24} />
           </button>
-          <button
-            onClick={handleRegistrationClick}
-            className="text-indigo-400 hover:text-indigo-300"
-            title="Add Book"
-          >
-            <Plus size={30} />
-          </button>
+          {isAdmin() && (
+            <button
+              onClick={handleRegistrationClick}
+              className="text-indigo-400 hover:text-indigo-300"
+              title="Add Book"
+            >
+              <Plus size={30} />
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Registration Modal */}
+      {/* Add / Edit Modal */}
       <AnimatePresence>
-        {isRegistering && (
+        {(isRegistering || editingBook) && (
           <BookRegistrationModal
             onClose={handleCloseModal}
-            onRegister={handleConfirmRegistration}
+            onRegister={editingBook ? handleConfirmEdit : handleConfirmRegistration}
             editValues={editValues}
             handleInputChange={handleInputChange}
+            title={editingBook ? "Edit Book" : "Add New Book"}
+            submitLabel={editingBook ? "Save" : "Add Book"}
           />
+        )}
+      </AnimatePresence>
+
+      {/* Delete confirmation */}
+      <AnimatePresence>
+        {bookToDelete && (
+          <motion.div
+            className="fixed inset-0 z-[9999] flex items-center justify-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => !isDeleting && setBookToDelete(null)}
+              aria-hidden
+            />
+            <motion.div
+              className="bg-gray-800 rounded-xl p-6 w-full max-w-sm relative z-[10000] border border-gray-700"
+              initial={{ scale: 0.95 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.95 }}
+            >
+              <p className="text-gray-200 mb-4">Delete this book? This cannot be undone.</p>
+              <div className="flex justify-end gap-2">
+                <button
+                  onClick={() => setBookToDelete(null)}
+                  disabled={isDeleting}
+                  className="px-4 py-2 text-gray-300 hover:text-white disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  disabled={isDeleting}
+                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50"
+                >
+                  {isDeleting ? "Deleting…" : "Delete"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
         )}
       </AnimatePresence>
 
@@ -227,17 +330,35 @@ const BookList = () => {
                 <div className="p-6 flex-1 flex flex-col">
                   <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">{book.title}</h3>
                   <div className="flex flex-col gap-1 text-gray-400 text-sm mb-3">
-                    <span>Author: {book.author || '-'}</span>
+                    <span>Author: {book.author || "-"}</span>
                     <span>Category: {book.category}</span>
                     <span>Language: {book.language}</span>
                   </div>
-                  <div className="mt-auto">
+                  <div className="mt-auto flex flex-col gap-2">
                     <button
                       onClick={() => openBook(book.book)}
                       className="text-indigo-400 hover:text-indigo-300 mt-3 mx-auto flex justify-center"
                     >
                       Read Book
                     </button>
+                    {isAdmin() && (
+                      <div className="flex justify-center gap-2">
+                        <button
+                          onClick={() => handleEditClick(book)}
+                          className="p-2 text-indigo-400 hover:text-indigo-300 rounded-lg hover:bg-gray-600"
+                          title="Edit book"
+                        >
+                          <Edit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteClick(book)}
+                          className="p-2 text-red-400 hover:text-red-300 rounded-lg hover:bg-gray-600"
+                          title="Delete book"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

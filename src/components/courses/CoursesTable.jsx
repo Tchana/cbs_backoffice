@@ -10,7 +10,12 @@ import {
 } from "../../services/CourseManagement";
 import CourseRegistrationModal from "./CourseRegistrationModal";
 import CourseViewModal from "./CourseViewModal";
+
+import { isAdmin } from "../../lib/auth";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
+
 const CoursesTable = ({ updateCourseStats }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [allTeachers, setAllTeachers] = useState([]);
   const [courseList, setCourseList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -29,19 +34,36 @@ const CoursesTable = ({ updateCourseStats }) => {
 
   // Refresh data function
   const refreshData = async () => {
-    const courses = await GetCourses();
-    setCourseList(courses);
-    setFilteredCourses(courses);
-    updateCourseStats(courses);
+    try {
+      const courses = await runWithLoader(() => GetCourses());
+      setCourseList(courses ?? []);
+      setFilteredCourses(courses ?? []);
+      updateCourseStats(courses ?? []);
+    } catch (err) {
+      console.error("Error refreshing courses:", err);
+      setCourseList([]);
+      setFilteredCourses([]);
+      updateCourseStats([]);
+    }
   };
 
   useEffect(() => {
     const fetchData = async () => {
-      const courses = await GetCourses();
-      setCourseList(courses);
-      setFilteredCourses(courses); // Ensure filteredCourses is updated
+      try {
+        const courses = await runWithLoader(() => GetCourses());
+        setCourseList(courses ?? []);
+        setFilteredCourses(courses ?? []);
+      } catch (err) {
+        console.error("Error fetching courses:", err);
+        setCourseList([]);
+        setFilteredCourses([]);
+      }
     };
-    fetchData();
+    fetchData().catch((err) => {
+      console.error("CoursesTable fetchData failed", err);
+      setCourseList([]);
+      setFilteredCourses([]);
+    });
   }, []);
 
   // ** Search Functionality **
@@ -50,13 +72,17 @@ const CoursesTable = ({ updateCourseStats }) => {
       setFilteredCourses(courseList);
     } else {
       const filtered = courseList.filter(
-        (course) =>
-          course.title.toLowerCase().includes(searchTerm) ||
-          course.description.toLowerCase().includes(searchTerm) ||
-          course.level.toLowerCase().includes(searchTerm) ||
-          `${course.teacher.firstName} ${course.teacher.lastName}`
-            .toLowerCase()
-            .includes(searchTerm) // Fix object reference
+        (course) => {
+          const teacherName = course.teacher
+            ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim()
+            : "";
+          return (
+            course.title?.toLowerCase().includes(searchTerm) ||
+            course.description?.toLowerCase().includes(searchTerm) ||
+            course.level?.toLowerCase().includes(searchTerm) ||
+            teacherName.toLowerCase().includes(searchTerm)
+          );
+        }
       );
 
       setFilteredCourses(filtered);
@@ -97,18 +123,20 @@ const CoursesTable = ({ updateCourseStats }) => {
     level
   ) => {
     try {
-      await CreateCourse(
-        coverImage,
-        teacherFirstName,
-        teacherLastName,
-        title,
-        description,
-        level
-      );
-      const updatedCourses = await GetCourses();
-      setCourseList(updatedCourses); // Ensure main list is updated
-      setFilteredCourses(updatedCourses);
-      updateCourseStats(updatedCourses);
+      const updatedCourses = await runWithLoader(async () => {
+        await CreateCourse(
+          coverImage,
+          teacherFirstName,
+          teacherLastName,
+          title,
+          description,
+          level
+        );
+        return GetCourses();
+      });
+      setCourseList(updatedCourses ?? []);
+      setFilteredCourses(updatedCourses ?? []);
+      updateCourseStats(updatedCourses ?? []);
       setRegistrationUserId(false);
     } catch (error) {
       console.error("Error creating course:", error);
@@ -122,8 +150,8 @@ const CoursesTable = ({ updateCourseStats }) => {
       title: course.title,
       description: course.description,
       level: course.level,
-      teacherFirstName: course.teacher.firstName,
-      teacherLastName: course.teacher.lastName,
+      teacherFirstName: course.teacher?.firstName ?? "",
+      teacherLastName: course.teacher?.lastName ?? "",
     });
   };
 
@@ -142,20 +170,25 @@ const CoursesTable = ({ updateCourseStats }) => {
 
   // Confirm Edits
   const handleConfirmEdit = async (courseId) => {
-    await editCourse(
-      courseId,
-      editValues.title,
-      editValues.description,
-      editValues.level,
-      editValues.teacherFirstName,
-      editValues.teacherLastName
-    );
-
-    const updatedCourses = await GetCourses();
-    setCourseList(updatedCourses); // Update the main course list
-    setFilteredCourses(updatedCourses); // Update local filtered state
-    updateCourseStats(updatedCourses); // Update the stats
-    setEditingCourseId(null);
+    try {
+      const updatedCourses = await runWithLoader(async () => {
+        await editCourse(
+          courseId,
+          editValues.title,
+          editValues.description,
+          editValues.level,
+          editValues.teacherFirstName,
+          editValues.teacherLastName
+        );
+        return GetCourses();
+      });
+      setCourseList(updatedCourses ?? []);
+      setFilteredCourses(updatedCourses ?? []);
+      updateCourseStats(updatedCourses ?? []);
+      setEditingCourseId(null);
+    } catch (error) {
+      console.error("Error editing course:", error);
+    }
   };
 
   //Start Deleting
@@ -166,21 +199,25 @@ const CoursesTable = ({ updateCourseStats }) => {
   // Confirm Delete
   const handleConfirmDelete = async (userId) => {
     try {
-      await deleteCourse(userId);
+      const updatedCourses = await runWithLoader(async () => {
+        await deleteCourse(userId);
+        return GetCourses();
+      });
 
-      // Fetch the latest list of courses from the API
-      const updatedCourses = await GetCourses();
+      setCourseList(updatedCourses ?? []);
 
-      // Update both courseList (full list) and filteredCourses (search results)
-      setCourseList(updatedCourses); // Update the main course list
-
-      // Apply the current search filter on the updated course list
-      const filtered = updatedCourses.filter(
-        (course) =>
-          course.title.toLowerCase().includes(searchTerm) ||
-          course.description.toLowerCase().includes(searchTerm) ||
-          `${course.teacher.firstName} ${course.teacher.lastName}`.toLowerCase().includes(searchTerm) ||
-          course.level.toLowerCase().includes(searchTerm)
+      const filtered = (updatedCourses ?? []).filter(
+        (course) => {
+          const teacherName = course.teacher
+            ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim().toLowerCase()
+            : "";
+          return (
+            course.title?.toLowerCase().includes(searchTerm) ||
+            course.description?.toLowerCase().includes(searchTerm) ||
+            teacherName.includes(searchTerm) ||
+            course.level?.toLowerCase().includes(searchTerm)
+          );
+        }
       );
 
       setFilteredCourses(filtered); // Update the displayed list
@@ -246,6 +283,20 @@ const CoursesTable = ({ updateCourseStats }) => {
     setViewingCourse(null);
   };
 
+  const handleLessonChange = async () => {
+    if (!viewingCourse?.id) return;
+    try {
+      const courses = await runWithLoader(() => GetCourses());
+      setCourseList(courses ?? []);
+      setFilteredCourses(courses ?? []);
+      updateCourseStats(courses ?? []);
+      const updated = (courses ?? []).find((c) => c.id === viewingCourse.id);
+      if (updated) setViewingCourse(updated);
+    } catch (err) {
+      console.error("Error refreshing after lesson change:", err);
+    }
+  };
+
   return (
     <>
       {!popUpState && (
@@ -278,12 +329,14 @@ const CoursesTable = ({ updateCourseStats }) => {
               >
                 <RefreshCw size={24} />
               </button>
-              <button
-                onClick={handleCourseCreationClick}
-                className="text-indigo-400 hover:text-indigo-300"
-              >
-                <Plus size={30} />
-              </button>
+              {isAdmin() && (
+                <button
+                  onClick={handleCourseCreationClick}
+                  className="text-indigo-400 hover:text-indigo-300"
+                >
+                  <Plus size={30} />
+                </button>
+              )}
             </div>
           </div>
 
@@ -307,6 +360,7 @@ const CoursesTable = ({ updateCourseStats }) => {
               <CourseViewModal
                 course={viewingCourse}
                 onClose={handleCloseViewModal}
+                onLessonChange={handleLessonChange}
               />
             )}
           </AnimatePresence>
@@ -352,15 +406,17 @@ const CoursesTable = ({ updateCourseStats }) => {
                                 onChange={(e) => {
                                   const selectedTeacher = allTeachers.find(
                                     (t) =>
-                                      `${t.firstName} ${t.lastName}` ===
+                                      `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() ===
                                       e.target.value
                                   );
-                                  handleInputChange(
-                                    e,
-                                    "teacher",
-                                    selectedTeacher.firstName,
-                                    selectedTeacher.lastName
-                                  );
+                                  if (selectedTeacher) {
+                                    handleInputChange(
+                                      e,
+                                      "teacher",
+                                      selectedTeacher.firstName ?? "",
+                                      selectedTeacher.lastName ?? ""
+                                    );
+                                  }
                                 }}
                                 className="block w-full p-2 rounded-md bg-gray-800 text-white"
                               >
@@ -382,7 +438,11 @@ const CoursesTable = ({ updateCourseStats }) => {
                               />
                             )
                           ) : field === "teacher" ? (
-                            <div className="text-sm font-medium text-gray-100">{`${course["teacher"].firstName} ${course["teacher"].lastName}`}</div>
+                            <div className="text-sm font-medium text-gray-100">
+                              {course.teacher
+                                ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim() || "—"
+                                : "—"}
+                            </div>
                           ) : (
                             <div className="text-sm font-medium text-gray-100">
                               {course[field]}
@@ -393,7 +453,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                     )}
                     <td>
                       <div className="text-sm font-medium text-gray-100">
-                        {course.lessons.length}
+                        {course.lessons?.length ?? 0}
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-300">
@@ -422,20 +482,24 @@ const CoursesTable = ({ updateCourseStats }) => {
                           >
                             <Eye size={18} />
                           </button>
-                          <button
-                            onClick={() => handleEditClick(course)}
-                            className="text-indigo-400 hover:text-indigo-300 mr-2"
-                            aria-label="Edit course"
-                          >
-                            <Edit size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteClick(course)}
-                            className="text-red-400 hover:text-red-300"
-                            aria-label="Delete course"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          {isAdmin() && (
+                            <>
+                              <button
+                                onClick={() => handleEditClick(course)}
+                                className="text-indigo-400 hover:text-indigo-300 mr-2"
+                                aria-label="Edit course"
+                              >
+                                <Edit size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteClick(course)}
+                                className="text-red-400 hover:text-red-300"
+                                aria-label="Delete course"
+                              >
+                                <Trash2 size={18} />
+                              </button>
+                            </>
+                          )}
                         </>
                       )}
                     </td>

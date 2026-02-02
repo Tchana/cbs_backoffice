@@ -7,6 +7,8 @@ const BookRegistrationModal = ({
   onRegister,
   editValues,
   handleInputChange,
+  title = "Add New Book",
+  submitLabel = "Add Book",
 }) => {
   return createPortal(
     <AnimatePresence>
@@ -40,7 +42,7 @@ const BookRegistrationModal = ({
             <X size={24} />
           </button>
 
-          <h2 className="text-2xl font-bold text-white mb-6">Add New Book</h2>
+          <h2 className="text-2xl font-bold text-white mb-6">{title}</h2>
 
           {/* Form Fields */}
           <div className="space-y-4">
@@ -104,6 +106,18 @@ const BookRegistrationModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
+                Description
+              </label>
+              <textarea
+                value={editValues.description ?? ""}
+                onChange={(e) => handleInputChange(e, "description")}
+                className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[80px]"
+                placeholder="Optional description"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
                 Book Cover
               </label>
               <input
@@ -139,7 +153,7 @@ const BookRegistrationModal = ({
               onClick={onRegister}
               className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
-              Add Book
+              {submitLabel}
             </button>
           </div>
         </motion.div>

@@ -1,12 +1,16 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { UsersIcon } from "lucide-react";
 import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import UsersTable from "../components/users/UserTable";
-import { GetUsers } from "../services/UsersManagement"; // Ensure this fetches the latest users list
+import { GetUsers } from "../services/UsersManagement";
+import { isAdmin } from "../lib/auth";
+import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const UsersPage = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     teachers: 0,
@@ -27,11 +31,13 @@ const UsersPage = () => {
   // Fetch users initially
   useEffect(() => {
     const fetchUsers = async () => {
-      const users = await GetUsers();
+      const users = await runWithLoader(() => GetUsers());
       updateUserStats(users);
     };
     fetchUsers();
   }, []);
+
+  if (!isAdmin()) return <Navigate to="/course" replace />;
 
   return (
     <div className="flex-1 overflow-auto relative z-10">

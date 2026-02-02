@@ -3,8 +3,10 @@ import { GetBlogs } from "../services/BlogManagement";
 import Header from "../components/common/Header";
 import BlogsList from "../components/blogs/BlogsList";
 import { useEffect } from "react";
+import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const BlogsPage = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [blogStats, setBlogStats] = useState({ totalBlogs: 0 });
 
   const updateBlogStats = (blogs) => {
@@ -14,7 +16,7 @@ const BlogsPage = () => {
   useEffect(() => {
     const fetchBlogs = async () => {
       try {
-        const blogs = await GetBlogs();
+        const blogs = await runWithLoader(() => GetBlogs());
         updateBlogStats(blogs);
       } catch (error) {
         console.error("Error fetching blogs:", error);

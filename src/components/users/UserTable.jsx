@@ -6,8 +6,10 @@ import { editUser, deleteUser } from "../../services/UsersManagement";
 import { createUserAsAdmin } from "../../services/AuthenticationManagement";
 import UserRegistrationModal from "./UserRegistrationModal";
 import UserViewModal from "./UserViewModal";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 const UsersTable = ({ updateUserStats }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -24,7 +26,7 @@ const UsersTable = ({ updateUserStats }) => {
 
   // Refresh data function
   const refreshData = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     const adminUsers = users.filter((user) => user.role === "admin");
     setUsersList(adminUsers);
     setFilteredUsers(adminUsers);
@@ -32,9 +34,8 @@ const UsersTable = ({ updateUserStats }) => {
   };
 
   const fetchUsers = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     setUsersList(users.filter((user) => user.role === "admin"));
-    // Initialize filtered users with all users
     setFilteredUsers(users.filter((user) => user.role === "admin"));
   };
 
@@ -77,16 +78,18 @@ const UsersTable = ({ updateUserStats }) => {
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
-      await createUserAsAdmin(
-        editValues.email,
-        editValues.password,
-        editValues.firstName,
-        editValues.lastName,
-        editValues.role,
-        editValues.p_image || null
+      await runWithLoader(() =>
+        createUserAsAdmin(
+          editValues.email,
+          editValues.password,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role,
+          editValues.p_image || null
+        )
       );
 
-      const updatedUsers = await GetUsers();
+      const updatedUsers = await runWithLoader(() => GetUsers());
       const adminUsers = updatedUsers.filter((user) => user.role === "admin");
       setUsersList(adminUsers); // Update the main users list
       setFilteredUsers(adminUsers);
@@ -119,20 +122,25 @@ const UsersTable = ({ updateUserStats }) => {
 
   // Confirm Edits
   const handleConfirmEdit = async (userId) => {
-    await editUser(
-      userId,
-      editValues.email,
-      editValues.firstName,
-      editValues.lastName,
-      editValues.role
-    );
-
-    const updatedUsers = await GetUsers();
-    const adminUsers = updatedUsers.filter((user) => user.role === "admin");
-    setUsersList(adminUsers); // Update the main users list
-    setFilteredUsers(adminUsers); // Update local filtered state
-    updateUserStats(adminUsers); // Update the stats
-    setEditingUserId(null);
+    try {
+      const updatedUsers = await runWithLoader(async () => {
+        await editUser(
+          userId,
+          editValues.email,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role
+        );
+        return GetUsers();
+      });
+      const adminUsers = (updatedUsers ?? []).filter((user) => user.role === "admin");
+      setUsersList(adminUsers);
+      setFilteredUsers(adminUsers);
+      updateUserStats(adminUsers);
+      setEditingUserId(null);
+    } catch (error) {
+      console.error("Error editing user:", error);
+    }
   };
 
   //Start Deleting
@@ -143,16 +151,12 @@ const UsersTable = ({ updateUserStats }) => {
   // Confirm Delete
   const handleConfirmDelete = async (userId) => {
     try {
-      await deleteUser(userId); // API call to delete user
-
-      // Fetch the latest list of users from the API
-      const updatedUsers = await GetUsers();
-      const adminUsers = updatedUsers.filter((user) => user.role === "admin");
-
-      // Update both usersList (full list) and filteredUsers (search results)
-      setUsersList(adminUsers); // Update the main users list
-
-      // Apply the current search filter on the updated user list
+      const updatedUsers = await runWithLoader(async () => {
+        await deleteUser(userId);
+        return GetUsers();
+      });
+      const adminUsers = (updatedUsers ?? []).filter((user) => user.role === "admin");
+      setUsersList(adminUsers);
       const filtered = adminUsers.filter(
         (user) =>
           user.firstName.toLowerCase().includes(searchTerm) ||
@@ -160,14 +164,12 @@ const UsersTable = ({ updateUserStats }) => {
           user.email.toLowerCase().includes(searchTerm) ||
           user.role.toLowerCase().includes(searchTerm)
       );
-
-      setFilteredUsers(filtered); // Update the displayed list
-      updateUserStats(adminUsers); // Update statistics
+      setFilteredUsers(filtered);
+      updateUserStats(adminUsers);
     } catch (error) {
       console.error("Error deleting user:", error);
     }
-
-    setDeletingUserId(null); // Reset delete state
+    setDeletingUserId(null);
   };
 
   // Compute paginated users and total pages

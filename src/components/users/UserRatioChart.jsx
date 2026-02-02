@@ -70,9 +70,9 @@ const UserRatioChart = ({ teachers, students, admins }) => {
 };
 
 UserRatioChart.propTypes = {
-  teachers: PropTypes.number.isRequired,
-  students: PropTypes.number.isRequired,
-  admins: PropTypes.number.isRequired,
+  teachers: PropTypes.number,
+  students: PropTypes.number,
+  admins: PropTypes.number,
 };
 
 export default UserRatioChart;

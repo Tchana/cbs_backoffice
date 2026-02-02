@@ -2,9 +2,11 @@ import React, { useState } from "react";
 import * as Components from "./Components";
 import { login, signup } from "../../services/AuthenticationManagement";
 import { useNavigate } from "react-router-dom";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 function AuthPage() {
   const navigate = useNavigate();
+  const runWithLoader = useApiLoader().runWithLoader;
   const [signIn, toggle] = useState(true);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -52,7 +54,7 @@ function AuthPage() {
     setError("");
 
     try {
-      const data = await login(formData.email, formData.password);
+      const data = await runWithLoader(() => login(formData.email, formData.password));
 
       if (!data.token) {
         setError("Login failed: No token returned.");
@@ -82,13 +84,15 @@ function AuthPage() {
     setSuccessMessage("");
 
     try {
-      await signup(
-        formData.email,
-        formData.password,
-        formData.firstName,
-        formData.lastName,
-        formData.p_image,
-        formData.role
+      await runWithLoader(() =>
+        signup(
+          formData.email,
+          formData.password,
+          formData.firstName,
+          formData.lastName,
+          formData.p_image,
+          formData.role
+        )
       );
 
       if (formData.role === "teacher") {

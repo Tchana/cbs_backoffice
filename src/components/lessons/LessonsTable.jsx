@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-react";
-import { GetUsers } from "../../services/UsersManagement";
-import { editUser, deleteUser } from "../../services/UsersManagement";
-import { CreateLesson } from "../../services/LessonManagement";
+import { CreateLesson, EditLesson, DeleteLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 const LessonsTable = ({ updateLessonsStats }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [lessonsList, setLessonsList] = useState([]);
   const [allCourses, setAllCourses] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -23,29 +23,28 @@ const LessonsTable = ({ updateLessonsStats }) => {
 
   // Refresh data function
   const refreshData = async () => {
-    await fetchLessons();
-    updateLessonsStats(lessonsList);
+    const newLessons = await fetchLessons();
+    if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
   };
 
-  // Fetch lessons from all courses
+  // Fetch lessons from all courses; returns the lessons array for callers
   const fetchLessons = async () => {
     try {
-      const courses = await GetCourses();
-      setAllCourses(courses);
-      
-      // Extract all lessons from all courses
-      const allLessons = courses.flatMap(course => 
-        course.lessons ? course.lessons.map(lesson => ({
+      const courses = await runWithLoader(() => GetCourses());
+      setAllCourses(courses ?? []);
+      const allLessons = (courses ?? []).flatMap((course) =>
+        (course.lessons ?? []).map((lesson) => ({
           ...lesson,
           courseTitle: course.title,
-          courseId: course.id
-        })) : []
+          courseId: course.id,
+        }))
       );
-      
       setLessonsList(allLessons);
       setFilteredLessons(allLessons);
+      return allLessons;
     } catch (error) {
       console.error("Error fetching lessons:", error);
+      return [];
     }
   };
 
@@ -97,16 +96,16 @@ const LessonsTable = ({ updateLessonsStats }) => {
         throw new Error("Please select a course");
       }
 
-      await CreateLesson(
-        selectedValues.course,
-        selectedValues.title,
-        selectedValues.description,
-        selectedValues.file || ""
+      await runWithLoader(() =>
+        CreateLesson(
+          selectedValues.course,
+          selectedValues.title,
+          selectedValues.description,
+          selectedValues.file || ""
+        )
       );
-
-      // Refresh lessons data
-      await fetchLessons();
-      updateLessonsStats(lessonsList);
+      const newLessons = await fetchLessons();
+      if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
       setRegistrationLessonId(false);
     } catch (error) {
       console.error("Error Creating Lesson:", error);
@@ -136,17 +135,16 @@ const LessonsTable = ({ updateLessonsStats }) => {
   // Confirm Edits
   const handleConfirmEdit = async (lessonId) => {
     try {
-      await editUser(
-        lessonId,
-        selectedValues.email,
-        selectedValues.firstName,
-        selectedValues.lastName,
-        selectedValues.role
+      await runWithLoader(() =>
+        EditLesson(
+          lessonId,
+          selectedValues.title,
+          selectedValues.description,
+          selectedValues.file
+        )
       );
-
-      // Refresh lessons data
-      await fetchLessons();
-      updateLessonsStats(lessonsList);
+      const newLessons = await fetchLessons();
+      if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
       setEditingLessonId(null);
     } catch (error) {
       console.error("Error updating lesson:", error);
@@ -161,11 +159,9 @@ const LessonsTable = ({ updateLessonsStats }) => {
   // Confirm Delete
   const handleConfirmDelete = async (lessonId) => {
     try {
-      await deleteUser(lessonId);
-
-      // Refresh lessons data
-      await fetchLessons();
-      updateLessonsStats(lessonsList);
+      await runWithLoader(() => DeleteLesson(lessonId));
+      const newLessons = await fetchLessons();
+      if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
     } catch (error) {
       console.error("Error deleting lesson:", error);
     }

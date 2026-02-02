@@ -6,8 +6,11 @@ import { editUser, deleteUser } from "../../services/UsersManagement";
 import { createUserAsAdmin } from "../../services/AuthenticationManagement";
 import TeacherRegistrationModal from "./TeacherRegistrationModal";
 import TeacherViewModal from "./TeacherViewModal";
+import { isAdmin } from "../../lib/auth";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 const TeacherTable = ({ updateUserStats }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -22,18 +25,9 @@ const TeacherTable = ({ updateUserStats }) => {
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
 
-  const userRole = (() => {
-    try {
-      const raw = localStorage.getItem("role");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  })();
-
   // Refresh data function
   const refreshData = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     const teacherUsers = users.filter((user) => user.role === "teacher");
     setUsersList(teacherUsers);
     setFilteredUsers(teacherUsers);
@@ -41,9 +35,8 @@ const TeacherTable = ({ updateUserStats }) => {
   };
 
   const fetchUsers = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     setUsersList(users.filter((user) => user.role === "teacher"));
-    // Initialize filtered users with all users
     setFilteredUsers(users.filter((user) => user.role === "teacher"));
   };
 
@@ -86,16 +79,17 @@ const TeacherTable = ({ updateUserStats }) => {
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
-      await createUserAsAdmin(
-        editValues.email,
-        editValues.password,
-        editValues.firstName,
-        editValues.lastName,
-        editValues.role,
-        editValues.p_image || null
+      await runWithLoader(() =>
+        createUserAsAdmin(
+          editValues.email,
+          editValues.password,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role,
+          editValues.p_image || null
+        )
       );
-
-      const updatedUsers = await GetUsers();
+      const updatedUsers = await runWithLoader(() => GetUsers());
       const teacherUsers = updatedUsers.filter((user) => user.role === "teacher");
       setUsersList(teacherUsers); // Update the main users list
       setFilteredUsers(teacherUsers);
@@ -128,20 +122,25 @@ const TeacherTable = ({ updateUserStats }) => {
 
   // Confirm Edits
   const handleConfirmEdit = async (userId) => {
-    await editUser(
-      userId,
-      editValues.email,
-      editValues.firstName,
-      editValues.lastName,
-      editValues.role
-    );
-
-    const updatedUsers = await GetUsers();
-    const teacherUsers = updatedUsers.filter((user) => user.role === "teacher");
-    setUsersList(teacherUsers); // Update the main users list
-    setFilteredUsers(teacherUsers); // Update local filtered state
-    updateUserStats(teacherUsers); // Update the stats
-    setEditingUserId(null);
+    try {
+      const updatedUsers = await runWithLoader(async () => {
+        await editUser(
+          userId,
+          editValues.email,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role
+        );
+        return GetUsers();
+      });
+      const teacherUsers = (updatedUsers ?? []).filter((user) => user.role === "teacher");
+      setUsersList(teacherUsers);
+      setFilteredUsers(teacherUsers);
+      updateUserStats(teacherUsers);
+      setEditingUserId(null);
+    } catch (error) {
+      console.error("Error editing user:", error);
+    }
   };
 
   //Start Deleting
@@ -152,16 +151,12 @@ const TeacherTable = ({ updateUserStats }) => {
   // Confirm Delete
   const handleConfirmDelete = async (userId) => {
     try {
-      await deleteUser(userId); // API call to delete user
-
-      // Fetch the latest list of users from the API
-      const updatedUsers = await GetUsers();
-      const teacherUsers = updatedUsers.filter((user) => user.role === "teacher");
-
-      // Update both usersList (full list) and filteredUsers (search results)
-      setUsersList(teacherUsers); // Update the main users list
-
-      // Apply the current search filter on the updated user list
+      const updatedUsers = await runWithLoader(async () => {
+        await deleteUser(userId);
+        return GetUsers();
+      });
+      const teacherUsers = (updatedUsers ?? []).filter((user) => user.role === "teacher");
+      setUsersList(teacherUsers);
       const filtered = teacherUsers.filter(
         (user) =>
           user.firstName.toLowerCase().includes(searchTerm) ||
@@ -169,14 +164,12 @@ const TeacherTable = ({ updateUserStats }) => {
           user.email.toLowerCase().includes(searchTerm) ||
           user.role.toLowerCase().includes(searchTerm)
       );
-
-      setFilteredUsers(filtered); // Update the displayed list
-      updateUserStats(teacherUsers); // Update statistics
+      setFilteredUsers(filtered);
+      updateUserStats(teacherUsers);
     } catch (error) {
       console.error("Error deleting user:", error);
     }
-
-    setDeletingUserId(null); // Reset delete state
+    setDeletingUserId(null);
   };
 
   // Compute paginated users and total pages
@@ -264,12 +257,14 @@ const TeacherTable = ({ updateUserStats }) => {
           >
             <RefreshCw size={24} />
           </button>
-          <button
-            onClick={handleRegistrationClick}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            <Plus size={30} />
-          </button>
+          {isAdmin() && (
+            <button
+              onClick={handleRegistrationClick}
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              <Plus size={30} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -363,7 +358,7 @@ const TeacherTable = ({ updateUserStats }) => {
                         <Eye size={18} />
                       </button>
 
-                      {userRole === "admin" && (
+                      {isAdmin() && (
                         <>
                           <button
                             onClick={() => handleEditClick(user)}

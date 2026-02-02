@@ -78,3 +78,75 @@ export const GetBooks = async () => {
     language: row.language || "",
   }));
 };
+
+export const EditBook = async (
+  id,
+  title,
+  author,
+  category,
+  bookCover,
+  book,
+  description,
+  language
+) => {
+  const updates = {};
+  if (title != null) updates.title = title;
+  if (author != null) updates.author = author;
+  if (category != null) updates.category = category;
+  if (description != null) updates.description = description;
+  if (language != null) updates.language = language;
+
+  if (bookCover && bookCover instanceof File) {
+    const ext = bookCover.name.split(".").pop();
+    const path = `covers/${crypto.randomUUID()}.${ext}`;
+    const { error: coverError } = await supabase.storage
+      .from("book-covers")
+      .upload(path, bookCover, { upsert: true });
+    if (!coverError) {
+      const { data: urlData } = supabase.storage
+        .from("book-covers")
+        .getPublicUrl(path);
+      updates.book_cover_url = urlData.publicUrl;
+    }
+  }
+
+  if (book && book instanceof File) {
+    const ext = book.name.split(".").pop();
+    const path = `files/${crypto.randomUUID()}.${ext}`;
+    const { error: fileError } = await supabase.storage
+      .from("book-files")
+      .upload(path, book, { upsert: true });
+    if (!fileError) {
+      const { data: urlData } = supabase.storage
+        .from("book-files")
+        .getPublicUrl(path);
+      updates.book_file_url = urlData.publicUrl;
+    }
+  }
+
+  const { data, error } = await supabase
+    .from("books")
+    .update(updates)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return {
+    id: data.id,
+    uuid: data.id,
+    title: data.title,
+    author: data.author || "",
+    category: data.category || "",
+    bookCover: data.book_cover_url,
+    book: data.book_file_url,
+    description: data.description || "",
+    language: data.language || "",
+  };
+};
+
+export const DeleteBook = async (id) => {
+  const { error } = await supabase.from("books").delete().eq("id", id);
+  if (error) throw new Error(error.message);
+  return { success: true };
+};

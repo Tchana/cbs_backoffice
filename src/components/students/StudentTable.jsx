@@ -6,8 +6,11 @@ import { editUser, deleteUser } from "../../services/UsersManagement";
 import { createUserAsAdmin } from "../../services/AuthenticationManagement";
 import StudentRegistrationModal from "./StudentRegistrationModal";
 import StudentViewModal from "./StudentViewModal";
+import { isAdmin } from "../../lib/auth";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 const StudentTable = ({ updateUserStats }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [filteredUsers, setFilteredUsers] = useState([]);
@@ -21,18 +24,10 @@ const StudentTable = ({ updateUserStats }) => {
   const confirmButtonRef = useRef(null);
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
-  const userRole = (() => {
-    try {
-      const raw = localStorage.getItem("role");
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
-  })();
 
   // Refresh data function
   const refreshData = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     const studentUsers = users.filter((user) => user.role === "student");
     setUsersList(studentUsers);
     setFilteredUsers(studentUsers);
@@ -40,7 +35,7 @@ const StudentTable = ({ updateUserStats }) => {
   };
 
   const fetchUsers = async () => {
-    const users = await GetUsers();
+    const users = await runWithLoader(() => GetUsers());
     setUsersList(users.filter((user) => user.role === "student"));
     // Initialize filtered users with all users
     setFilteredUsers(users.filter((user) => user.role === "student"));
@@ -85,16 +80,17 @@ const StudentTable = ({ updateUserStats }) => {
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
-      await createUserAsAdmin(
-        editValues.email,
-        editValues.password,
-        editValues.firstName,
-        editValues.lastName,
-        editValues.role,
-        editValues.p_image || null
+      await runWithLoader(() =>
+        createUserAsAdmin(
+          editValues.email,
+          editValues.password,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role,
+          editValues.p_image || null
+        )
       );
-
-      const updatedUsers = await GetUsers();
+      const updatedUsers = await runWithLoader(() => GetUsers());
       const studentUsers = updatedUsers.filter((user) => user.role === "student");
       setUsersList(studentUsers); // Update the main users list
       setFilteredUsers(studentUsers);
@@ -127,20 +123,25 @@ const StudentTable = ({ updateUserStats }) => {
 
   // Confirm Edits
   const handleConfirmEdit = async (userId) => {
-    await editUser(
-      userId,
-      editValues.email,
-      editValues.firstName,
-      editValues.lastName,
-      editValues.role
-    );
-
-    const updatedUsers = await GetUsers();
-    const studentUsers = updatedUsers.filter((user) => user.role === "student");
-    setUsersList(studentUsers); // Update the main users list
-    setFilteredUsers(studentUsers); // Update local filtered state
-    updateUserStats(studentUsers); // Update the stats
-    setEditingUserId(null);
+    try {
+      const updatedUsers = await runWithLoader(async () => {
+        await editUser(
+          userId,
+          editValues.email,
+          editValues.firstName,
+          editValues.lastName,
+          editValues.role
+        );
+        return GetUsers();
+      });
+      const studentUsers = (updatedUsers ?? []).filter((user) => user.role === "student");
+      setUsersList(studentUsers);
+      setFilteredUsers(studentUsers);
+      updateUserStats(studentUsers);
+      setEditingUserId(null);
+    } catch (error) {
+      console.error("Error editing user:", error);
+    }
   };
 
   //Start Deleting
@@ -151,16 +152,12 @@ const StudentTable = ({ updateUserStats }) => {
   // Confirm Delete
   const handleConfirmDelete = async (userId) => {
     try {
-      await deleteUser(userId); // API call to delete user
-
-      // Fetch the latest list of users from the API
-      const updatedUsers = await GetUsers();
-      const studentUsers = updatedUsers.filter((user) => user.role === "student");
-
-      // Update both usersList (full list) and filteredUsers (search results)
-      setUsersList(studentUsers); // Update the main users list
-
-      // Apply the current search filter on the updated user list
+      const updatedUsers = await runWithLoader(async () => {
+        await deleteUser(userId);
+        return GetUsers();
+      });
+      const studentUsers = (updatedUsers ?? []).filter((user) => user.role === "student");
+      setUsersList(studentUsers);
       const filtered = studentUsers.filter(
         (user) =>
           user.firstName.toLowerCase().includes(searchTerm) ||
@@ -263,12 +260,14 @@ const StudentTable = ({ updateUserStats }) => {
           >
             <RefreshCw size={24} />
           </button>
-          <button
-            onClick={handleRegistrationClick}
-            className="text-indigo-400 hover:text-indigo-300"
-          >
-            <Plus size={30} />
-          </button>
+          {isAdmin() && (
+            <button
+              onClick={handleRegistrationClick}
+              className="text-indigo-400 hover:text-indigo-300"
+            >
+              <Plus size={30} />
+            </button>
+          )}
         </div>
       </div>
 
@@ -362,7 +361,7 @@ const StudentTable = ({ updateUserStats }) => {
                         <Eye size={18} />
                       </button>
 
-                      {userRole === "admin" && (
+                      {isAdmin() && (
                         <>
                           <button
                             onClick={() => handleEditClick(user)}

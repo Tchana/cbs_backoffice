@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase";
+import { FunctionsHttpError } from "@supabase/supabase-js";
 
 export const login = async (email, password) => {
   let data, error;
@@ -54,6 +55,22 @@ export const createUserAsAdmin = async (
   role,
   p_image
 ) => {
+  const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+  if (sessionError || !session?.access_token) {
+    throw new Error("You must be logged in to create users. Please log in again.");
+  }
+
+  // Use a fresh token so the gateway accepts the JWT (avoids 401 Invalid JWT)
+  const { data: { session: freshSession }, error: refreshError } =
+    await supabase.auth.refreshSession({ refresh_token: session.refresh_token });
+  if (refreshError) {
+    throw new Error("Session expired or invalid. Please log in again.");
+  }
+  const token = freshSession?.access_token ?? session.access_token;
+  if (!token) {
+    throw new Error("No session token. Please log in again.");
+  }
+
   const { data, error } = await supabase.functions.invoke("create-user", {
     body: {
       email,
@@ -62,14 +79,32 @@ export const createUserAsAdmin = async (
       last_name: lastname,
       role: role || "teacher",
     },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
 
   if (error) {
-    throw new Error(error.message || "Failed to create user");
+    // Parse response body from Edge Function (401/403/400 etc.)
+    let body = {};
+    if (error instanceof FunctionsHttpError && error.context && typeof error.context.json === "function") {
+      try {
+        body = await error.context.json();
+      } catch {
+        // ignore
+      }
+    }
+    const msg = body.detail || body.error || error.message;
+    const status = error.context?.status ?? 0;
+    const is401 = status === 401;
+    const hint = is401
+      ? " Log out, log in again, then retry. If it persists: ensure .env (VITE_SUPABASE_URL / VITE_SUPABASE_ANON_KEY) matches the project where the create-user Edge Function is deployed, and in Supabase Dashboard → Edge Functions → create-user → disable 'Verify JWT' so the function validates the token itself."
+      : "";
+    throw new Error((msg || "Failed to create user") + hint);
   }
 
   if (data?.error) {
-    throw new Error(data.error);
+    throw new Error(data.detail || data.error);
   }
 
   const userId = data?.id;

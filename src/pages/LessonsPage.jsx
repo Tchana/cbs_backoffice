@@ -6,29 +6,34 @@ import StatCard from "../components/common/StatCard";
 import LessonsTable from "../components/lessons/LessonsTable";
 import { GetCourses } from "../services/CourseManagement";
 import LoadingSpinner from "../components/common/LoadingSpinner";
+import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const LessonsPage = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [LessonsStats, setLessonsStats] = useState({ totalLessons: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
-  // Function to update stats
+  // Function to update stats (receives array of lessons)
   const updateLessonsStats = (lessons) => {
-    setLessonsStats({ totalLessons: lessons.length });
+    const count = Array.isArray(lessons) ? lessons.length : 0;
+    setLessonsStats({ totalLessons: count });
   };
 
-  // Fetch courses initially
+  // Fetch courses initially and set total lessons
   useEffect(() => {
-    const fetchLessons = async () => {
+    const load = async () => {
       try {
-        const lessons = await GetCourses();
-        updateLessonsStats(lessons);
+        const courses = await runWithLoader(() => GetCourses());
+        const allLessons = (courses ?? []).flatMap((c) => c.lessons ?? []);
+        updateLessonsStats(allLessons);
       } catch (error) {
-        console.error("Error fetching courses:", error);
+        console.error("Error fetching lessons:", error);
+        updateLessonsStats([]);
       } finally {
         setIsLoading(false);
       }
     };
-    fetchLessons();
+    load().catch(() => setIsLoading(false));
   }, []);
 
   if (isLoading) {
@@ -62,7 +67,7 @@ const LessonsPage = () => {
           )}
         </motion.div>
 
-        <LessonsTable updateLessonsStats={LessonsStats} />
+        <LessonsTable updateLessonsStats={updateLessonsStats} />
       </main>
     </div>
   );

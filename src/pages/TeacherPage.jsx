@@ -4,9 +4,11 @@ import { motion } from "framer-motion";
 import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import TeacherTable from "../components/teachers/TeacherTable";
-import { GetUsers } from "../services/UsersManagement"; // Ensure this fetches the latest users list
+import { GetUsers } from "../services/UsersManagement";
+import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const TeacherPage = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
     teachers: 0,
@@ -27,7 +29,7 @@ const TeacherPage = () => {
   // Fetch users initially
   useEffect(() => {
     const fetchUsers = async () => {
-      const users = await GetUsers();
+      const users = await runWithLoader(() => GetUsers());
       updateUserStats(users);
     };
     fetchUsers();

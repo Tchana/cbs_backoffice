@@ -10,29 +10,23 @@ import {
   Users,
   UserCircle,
   DoorOpen,
-  FileText
+  FileText,
+  BookOpenCheck
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
+import { isAdmin } from "../../lib/auth";
 
-const getStoredRole = () => {
-  try {
-    const raw = localStorage.getItem("role");
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-};
-const userRole = getStoredRole();
 const SIDEBAR_ITEMS = [];
-if (userRole === "admin") {
+if (isAdmin()) {
   SIDEBAR_ITEMS.push(
     { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
     { name: "Users", icon: Users, color: "#EC4899", href: "/users" },
     { name: "Students", icon: Users, color: "#EC48FC", href: "/students" },
     { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
     { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+    { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
     { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
     { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     {
@@ -47,6 +41,7 @@ if (userRole === "admin") {
     { name: "Students", icon: Users, color: "#EC48FC", href: "/students" },
     { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
     { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+    { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
     { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
     { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     {

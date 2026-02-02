@@ -5,7 +5,11 @@ import { GetBlogs, AddBlog, DeleteBlog, EditBlog } from "../../services/BlogMana
 import BlogRegistrationModal from "./BlogRegistrationModal";
 import BlogViewModal from "./BlogViewModal";
 
+import { isAdmin } from "../../lib/auth";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
+
 const BlogsList = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [searchTerm, setSearchTerm] = useState("");
   const [blogData, setBlogData] = useState([]);
   const [filteredBlogs, setFilteredBlogs] = useState([]);
@@ -28,7 +32,7 @@ const BlogsList = () => {
   const fetchBlogs = async () => {
     try {
       setIsLoading(true);
-      const blogs = await GetBlogs();
+      const blogs = await runWithLoader(() => GetBlogs());
       setBlogData(blogs);
       setFilteredBlogs(blogs);
     } catch (err) {
@@ -83,11 +87,13 @@ const BlogsList = () => {
 
   const handleConfirmRegistration = async () => {
     try {
-      await AddBlog(
-        editValues.title,
-        editValues.author,
-        editValues.content,
-        editValues.image
+      await runWithLoader(() =>
+        AddBlog(
+          editValues.title,
+          editValues.author,
+          editValues.content,
+          editValues.image
+        )
       );
       await fetchBlogs();
       handleCloseModal();
@@ -114,7 +120,7 @@ const BlogsList = () => {
 
   const handleDeleteBlog = async (blogId) => {
     try {
-      await DeleteBlog(blogId);
+      await runWithLoader(() => DeleteBlog(blogId));
       await fetchBlogs();
       setViewingBlog(null);
     } catch (error) {
@@ -125,12 +131,14 @@ const BlogsList = () => {
 
   const handleConfirmEdit = async () => {
     try {
-      await EditBlog(
-        editingBlog.id,
-        editValues.title,
-        editValues.author,
-        editValues.content,
-        editValues.image
+      await runWithLoader(() =>
+        EditBlog(
+          editingBlog.id,
+          editValues.title,
+          editValues.author,
+          editValues.content,
+          editValues.image
+        )
       );
       await fetchBlogs();
       handleCloseModal();
@@ -214,12 +222,14 @@ const BlogsList = () => {
             >
               <RefreshCw size={24} />
             </button>
-            <button
-              onClick={handleRegistrationClick}
-              className="text-indigo-400 hover:text-indigo-300"
-            >
-              <Plus size={30} />
-            </button>
+            {isAdmin() && (
+              <button
+                onClick={handleRegistrationClick}
+                className="text-indigo-400 hover:text-indigo-300"
+              >
+                <Plus size={30} />
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -244,6 +254,7 @@ const BlogsList = () => {
             onClose={() => setViewingBlog(null)}
             onEdit={handleEditBlog}
             onDelete={handleDeleteBlog}
+            canEdit={isAdmin()}
           />
         )}
       </AnimatePresence>
@@ -308,22 +319,24 @@ const BlogsList = () => {
                       <span>Read More</span>
                     </button>
                     
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() => handleEditBlog(blog)}
-                        className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900 rounded-lg transition-colors"
-                        title="Edit blog"
-                      >
-                        <Edit size={16} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteBlog(blog.id)}
-                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-lg transition-colors"
-                        title="Delete blog"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
+                    {isAdmin() && (
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => handleEditBlog(blog)}
+                          className="p-2 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-900 rounded-lg transition-colors"
+                          title="Edit blog"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteBlog(blog.id)}
+                          className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900 rounded-lg transition-colors"
+                          title="Delete blog"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>

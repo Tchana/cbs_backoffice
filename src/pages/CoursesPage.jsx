@@ -5,8 +5,10 @@ import Header from "../components/common/Header";
 import StatCard from "../components/common/StatCard";
 import CoursesTable from "../components/courses/CoursesTable";
 import { GetCourses } from "../services/CourseManagement";
+import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const CoursesPage = () => {
+  const runWithLoader = useApiLoader().runWithLoader;
   const [courseStats, setCourseStats] = useState({ totalCourses: 0 });
 
   // Function to update stats
@@ -18,13 +20,14 @@ const CoursesPage = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const courses = await GetCourses();
-        updateCourseStats(courses);
+        const courses = await runWithLoader(() => GetCourses());
+        updateCourseStats(courses ?? []);
       } catch (error) {
         console.error("Error fetching courses:", error);
+        updateCourseStats([]);
       }
     };
-    fetchCourses();
+    fetchCourses().catch(() => updateCourseStats([]));
   }, []);
 
   return (

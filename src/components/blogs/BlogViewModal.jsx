@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Calendar, User, Edit, Trash2 } from "lucide-react";
 import { createPortal } from "react-dom";
 
-const BlogViewModal = ({ blog, onClose, onEdit, onDelete }) => {
+const BlogViewModal = ({ blog, onClose, onEdit, onDelete, canEdit = true }) => {
   if (!blog) return null;
 
   const formatDate = (dateString) => {
@@ -64,23 +64,25 @@ const BlogViewModal = ({ blog, onClose, onEdit, onDelete }) => {
               </div>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex space-x-2">
-              <button
-                onClick={() => onEdit(blog)}
-                className="flex items-center space-x-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                <Edit size={16} />
-                <span>Edit</span>
-              </button>
-              <button
-                onClick={() => onDelete(blog.id)}
-                className="flex items-center space-x-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-              >
-                <Trash2 size={16} />
-                <span>Delete</span>
-              </button>
-            </div>
+            {/* Action Buttons (admin only) */}
+            {canEdit && (
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => onEdit(blog)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  <Edit size={16} />
+                  <span>Edit</span>
+                </button>
+                <button
+                  onClick={() => onDelete(blog.id)}
+                  className="flex items-center space-x-2 px-3 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete</span>
+                </button>
+              </div>
+            )}
           </div>
 
           {/* Blog Image */}
