@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { GetUsers } from "../../services/UsersManagement";
 import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-react";
 import { editUser, deleteUser } from "../../services/UsersManagement";
-import { signup } from "../../services/AuthenticationManagement";
+import { createUserAsAdmin } from "../../services/AuthenticationManagement";
 import StudentRegistrationModal from "./StudentRegistrationModal";
 import StudentViewModal from "./StudentViewModal";
 
@@ -21,7 +21,14 @@ const StudentTable = ({ updateUserStats }) => {
   const confirmButtonRef = useRef(null);
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
-  const userRole = JSON.parse(localStorage.getItem("role"));
+  const userRole = (() => {
+    try {
+      const raw = localStorage.getItem("role");
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  })();
 
   // Refresh data function
   const refreshData = async () => {
@@ -78,13 +85,13 @@ const StudentTable = ({ updateUserStats }) => {
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
-      await signup(
+      await createUserAsAdmin(
         editValues.email,
         editValues.password,
         editValues.firstName,
         editValues.lastName,
-        editValues.p_image || "",
-        editValues.role
+        editValues.role,
+        editValues.p_image || null
       );
 
       const updatedUsers = await GetUsers();

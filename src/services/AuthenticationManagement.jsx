@@ -1,26 +1,100 @@
-const API_URL = "https://mardoche.pythonanywhere.com";
+import { supabase } from "../lib/supabase";
 
 export const login = async (email, password) => {
-  const response = await fetch(`${API_URL}/login/`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: email,
-      password: password,
-    }),
-  });
-  console.log(response);
-  if (!response.ok) {
-    console.log(response);
-    throw new Error("Invalid username or password");
+  let data, error;
+  try {
+    const result = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    data = result.data;
+    error = result.error;
+  } catch (err) {
+    const msg = err?.message || "";
+    if (msg.toLowerCase().includes("fetch") || msg.toLowerCase().includes("network")) {
+      const url = import.meta.env.VITE_SUPABASE_URL;
+      throw new Error(
+        "Cannot reach Supabase. Check: (1) .env has VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY, " +
+        "(2) URL is correct (e.g. https://xxxx.supabase.co), (3) restart dev server after changing .env. " +
+        (url ? `Current URL: ${url}` : "No VITE_SUPABASE_URL set.")
+      );
+    }
+    throw err;
   }
-  const data = await response.json();
+
+  if (error) {
+    throw new Error(error.message || "Invalid email or password");
+  }
+
+  const session = data.session;
+  if (!session) throw new Error("No session returned");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name, role, avatar_url")
+    .eq("id", session.user.id)
+    .single();
+
+  return {
+    token: session.access_token,
+    user: session.user,
+    role: profile?.role ?? "teacher",
+  };
+};
+
+/**
+ * Create a new user (auth + profile). Only callable by an admin; use the create-user Edge Function.
+ * When a profile is created, the DB trigger creates the profile row from auth user metadata.
+ */
+export const createUserAsAdmin = async (
+  email,
+  password,
+  firstname,
+  lastname,
+  role,
+  p_image
+) => {
+  const { data, error } = await supabase.functions.invoke("create-user", {
+    body: {
+      email,
+      password,
+      first_name: firstname,
+      last_name: lastname,
+      role: role || "teacher",
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to create user");
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+
+  const userId = data?.id;
+  if (userId && p_image && typeof p_image.name === "string") {
+    const fileExt = p_image.name.split(".").pop();
+    const fileName = `${userId}/avatar.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, p_image, { upsert: true });
+
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: urlData.publicUrl })
+        .eq("id", userId);
+    }
+  }
 
   return data;
 };
 
+/** Public signup from the login page (creates auth user; trigger creates profile). */
 export const signup = async (
   email,
   password,
@@ -29,39 +103,44 @@ export const signup = async (
   p_image,
   role
 ) => {
-  const formData = new FormData();
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        first_name: firstname,
+        last_name: lastname,
+        role: role || "teacher",
+      },
+    },
+  });
 
-  formData.append("email", email);
-  formData.append("password", password);
-  formData.append("firstName", firstname);
-  formData.append("lastName", lastname);
-  formData.append("pImage", p_image);
-  formData.append("role", role);
-
-  try {
-    const response = await fetch(`${API_URL}/register/`, {
-      method: "POST",
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Signup error: ", errorText);
-      throw new Error(errorText);
-    }
-
-    const data = await response.json();
-    console.log("Signup success:", data);
-    return data;
-  } catch (error) {
-    console.error("Error signing up:", error);
-    throw error;
+  if (error) {
+    throw new Error(error.message || "Signup failed");
   }
+
+  if (data.user && p_image && typeof p_image.name === "string") {
+    const fileExt = p_image.name.split(".").pop();
+    const fileName = `${data.user.id}/avatar.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, p_image, { upsert: true });
+
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: urlData.publicUrl })
+        .eq("id", data.user.id);
+    }
+  }
+
+  return data;
 };
 
 export const updatePassword = async (email, password) => {
-  const response = await fetch(`${API_URL}/update-password/`, {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) throw new Error(error.message);
 };

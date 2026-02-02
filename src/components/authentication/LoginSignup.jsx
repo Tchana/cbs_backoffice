@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import * as Components from "./Components";
 import { login, signup } from "../../services/AuthenticationManagement";
 import { useNavigate } from "react-router-dom";
-import { GetUsers } from "../../services/UsersManagement";
 
 function AuthPage() {
   const navigate = useNavigate();
@@ -54,10 +53,9 @@ function AuthPage() {
 
     try {
       const data = await login(formData.email, formData.password);
-      console.log("Login response:", data); // Debug: log the response
 
       if (!data.token) {
-        setError("Login failed: No token returned from server.");
+        setError("Login failed: No token returned.");
         return;
       }
 
@@ -69,37 +67,12 @@ function AuthPage() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("auth", "true");
       localStorage.setItem("role", JSON.stringify(data.role));
-      console.log("localStorage after login:", {
-        authToken: localStorage.getItem("authToken"),
-        auth: localStorage.getItem("auth"),
-        role: localStorage.getItem("role"),
-      });
 
-      const userData = await GetUsers();
-      const user = userData.find((user) => user.email === formData.email);
-      if (user && user.role === "student") {
-        localStorage.setItem("auth", "false");
-        localStorage.removeItem("authToken");
-        setError("Student account not allowed");
-        return;
-      }
-      if (user) {
-        localStorage.setItem("role", JSON.stringify(user.role));
-      }
       navigate("/overview");
-      navigate(0); // Refresh to apply new auth state
-    } catch (error) {
-      console.error("Error logging in:", error);
-      // Try to show the real error message from the backend if available
-      if (error.response) {
-        error.response.json().then((err) => {
-          setError(err.message || "Login failed");
-        });
-      } else if (error.message) {
-        setError(error.message);
-      } else {
-        setError("Invalid email or password");
-      }
+      navigate(0);
+    } catch (err) {
+      console.error("Error logging in:", err);
+      setError(err.message || "Invalid email or password");
     }
   };
 
@@ -109,7 +82,6 @@ function AuthPage() {
     setSuccessMessage("");
 
     try {
-      // Register the user
       await signup(
         formData.email,
         formData.password,
@@ -119,18 +91,17 @@ function AuthPage() {
         formData.role
       );
 
-      // Show approval message for teacher roles
       if (formData.role === "teacher") {
         setShowApprovalModal(true);
       } else {
-        // For students, show regular success message
-        setSuccessMessage("Account created successfully! Please login.");
+        setSuccessMessage(
+          formData.role === "admin"
+            ? "Admin account created. You can log in now."
+            : "Account created successfully! Please login."
+        );
       }
-      
-      // Clear form data
-      clearForm();
 
-      // Switch to login form
+      clearForm();
       toggle(true);
     } catch (error) {
       console.error("Error during signup:", error);
@@ -204,9 +175,8 @@ function AuthPage() {
               type="file"
               id="p_image"
               accept="image/*"
-              placeholder="Profile Image"
+              placeholder="Profile Image (optional)"
               onChange={handleInputChange}
-              required
               className="w-full h-12 px-4"
             />
             <Components.Select
@@ -216,6 +186,7 @@ function AuthPage() {
               required
               className="w-full h-12 px-4"
             >
+              <option value="admin">Admin</option>
               <option value="teacher">Teacher</option>
               <option value="student">Student</option>
             </Components.Select>
@@ -283,15 +254,14 @@ function AuthPage() {
               <Components.Paragraph>
                 To keep connected with us please login with your personal info
               </Components.Paragraph>
-              {/* <Components.GhostButton onClick={handleToggle}>
+              <Components.GhostButton onClick={handleToggle}>
                 Sign Up
-              </Components.GhostButton> */}
+              </Components.GhostButton>
             </Components.RightOverlayPanel>
           </Components.Overlay>
         </Components.OverlayContainer>
       </Components.Container>
 
-      {/* Approval Modal */}
       {showApprovalModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded-lg shadow-xl max-w-md w-full mx-4">

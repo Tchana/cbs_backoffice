@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
+import { Route, Routes, Navigate } from "react-router-dom";
 
+import { supabase } from "./lib/supabase";
 import Sidebar from "./components/common/Sidebar";
 import OverviewPage from "./pages/OverviewPage";
 import CoursesPage from "./pages/CoursesPage";
@@ -11,7 +12,6 @@ import BooksPage from "./pages/BooksPage";
 import BlogsPage from "./pages/BlogsPage";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
-import { WhoAmI } from "./services/AccountInfoManagement";
 
 // Layout component for authenticated routes
 const AuthenticatedLayout = () => (
@@ -38,34 +38,69 @@ const AuthenticatedLayout = () => (
 );
 
 function App() {
-  const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkAuth = async () => {
-      const authToken = localStorage.getItem("authToken");
-      const authStatus = localStorage.getItem("auth") === "true";
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
 
-      setIsAuthenticated(authStatus && !!authToken);
-      setIsLoading(false);
+        if (error || !session) {
+          localStorage.removeItem("authToken");
+          localStorage.setItem("auth", "false");
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
 
-      if (!authStatus || !authToken) {
+        localStorage.setItem("authToken", session.access_token);
+        localStorage.setItem("auth", "true");
+
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", session.user.id)
+          .single();
+
+        if (profile?.role) {
+          localStorage.setItem("role", JSON.stringify(profile.role));
+        }
+
+        setIsAuthenticated(true);
+      } catch (err) {
+        console.error("Auth check failed:", err);
         localStorage.removeItem("authToken");
         localStorage.setItem("auth", "false");
-      } else {
-        // Check if user exists server-side
-        try {
-          await WhoAmI();
-        } catch (err) {
-          // User does not exist or token invalid
-          localStorage.clear();
-          window.location.reload();
-        }
+        setIsAuthenticated(false);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     checkAuth();
+
+    let subscription;
+    try {
+      const { data } = supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (!session) {
+            localStorage.removeItem("authToken");
+            localStorage.setItem("auth", "false");
+            setIsAuthenticated(false);
+          } else {
+            localStorage.setItem("authToken", session.access_token);
+            localStorage.setItem("auth", "true");
+            setIsAuthenticated(true);
+          }
+        }
+      );
+      subscription = data.subscription;
+    } catch (_) {
+      subscription = null;
+    }
+
+    return () => subscription?.unsubscribe();
   }, []);
 
   if (isLoading) {

@@ -1,108 +1,95 @@
-const API_URL = "https://mardoche.pythonanywhere.com";
+import { supabase } from "../lib/supabase";
 
-export const AddBlog = async (
-  title,
-  author,
-  text,
-  blogImage
-) => {
-  const Token = localStorage.getItem("authToken");
-  const formData = new FormData();
-  formData.append("title", title);
-  formData.append("author", author);
-  formData.append("content", text);
-  if (blogImage) {
-    formData.append("image", blogImage);
+export const AddBlog = async (title, author, text, blogImage) => {
+  let imageUrl = null;
+  if (blogImage && blogImage instanceof File) {
+    const ext = blogImage.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("blog-images")
+      .upload(path, blogImage, { upsert: true });
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("blog-images")
+        .getPublicUrl(path);
+      imageUrl = urlData.publicUrl;
+    }
   }
 
-  const response = await fetch(`${API_URL}/blogs/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-    body: formData,
-  });
+  const { data, error } = await supabase
+    .from("blogs")
+    .insert({
+      title,
+      author: author || null,
+      content: text || null,
+      image_url: imageUrl,
+    })
+    .select()
+    .single();
 
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const GetBlogs = async () => {
-  const Token = localStorage.getItem("authToken");
+  const { data, error } = await supabase
+    .from("blogs")
+    .select("id, title, author, content, image_url, created_at")
+    .order("created_at", { ascending: false });
 
-  const response = await fetch(`${API_URL}/blogs/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
+  if (error) throw new Error(error.message);
+  return (data || []).map((row) => ({
+    ...row,
+    image: row.image_url,
+  }));
 };
 
 export const GetBlogById = async (blogId) => {
-  const Token = localStorage.getItem("authToken");
+  const { data, error } = await supabase
+    .from("blogs")
+    .select("id, title, author, content, image_url, created_at")
+    .eq("id", blogId)
+    .single();
 
-  const response = await fetch(`${API_URL}/blogs/${blogId}/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
+  if (error) throw new Error(error.message);
+  return data ? { ...data, image: data.image_url } : null;
 };
 
 export const DeleteBlog = async (blogId) => {
-  const Token = localStorage.getItem("authToken");
-
-  const response = await fetch(`${API_URL}/blogs/${blogId}/`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
+  const { error } = await supabase.from("blogs").delete().eq("id", blogId);
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
-export const EditBlog = async (
-  blogId,
-  title,
-  author,
-  text,
-  blogImage
-) => {
-  const Token = localStorage.getItem("authToken");
-  const formData = new FormData();
-  formData.append("title", title);
-  formData.append("author", author);
-  formData.append("content", text);
-  if (blogImage) {
-    formData.append("image", blogImage);
+export const EditBlog = async (blogId, title, author, text, blogImage) => {
+  const updates = {
+    title,
+    author: author || null,
+    content: text || null,
+    updated_at: new Date().toISOString(),
+  };
+
+  if (blogImage && blogImage instanceof File) {
+    const ext = blogImage.name.split(".").pop();
+    const path = `${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("blog-images")
+      .upload(path, blogImage, { upsert: true });
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("blog-images")
+        .getPublicUrl(path);
+      updates.image_url = urlData.publicUrl;
+    }
   }
 
-  const response = await fetch(`${API_URL}/blogs/${blogId}/`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-    body: formData,
-  });
+  const { data, error } = await supabase
+    .from("blogs")
+    .update(updates)
+    .eq("id", blogId)
+    .select()
+    .single();
 
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
-}; 
+  if (error) throw new Error(error.message);
+  return data ? { ...data, image: data.image_url } : null;
+};

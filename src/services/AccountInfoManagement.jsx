@@ -1,14 +1,26 @@
-const API_URL = "https://mardoche.pythonanywhere.com";
+import { supabase } from "../lib/supabase";
 
 export const WhoAmI = async () => {
-  const response = await fetch(`${API_URL}/me/`, {
-    headers: {
-      Authorization: `Token ${localStorage.getItem("authToken")}`,
-    },
-  });
-  if (!response.ok) {
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) {
+    throw new Error("Not authenticated");
+  }
+
+  const { data: profile, error } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name, avatar_url")
+    .eq("id", user.id)
+    .single();
+
+  if (error || !profile) {
     throw new Error("Failed to fetch account info");
   }
-  const data = await response.json();
-  return data;
+
+  return {
+    uuid: profile.id,
+    email: profile.email || user.email,
+    firstName: profile.first_name || "",
+    lastName: profile.last_name || "",
+    pImage: profile.avatar_url || "",
+  };
 };

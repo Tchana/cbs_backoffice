@@ -1,122 +1,100 @@
-const API_URL = "https://mardoche.pythonanywhere.com";
+import { supabase } from "../lib/supabase";
+
+function mapProfileToUser(row) {
+  return {
+    id: row.id,
+    uuid: row.id,
+    email: row.email,
+    firstName: row.first_name || "",
+    lastName: row.last_name || "",
+    role: row.role || "teacher",
+    pImage: row.avatar_url,
+  };
+}
 
 export const courses = async () => {
-  const token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/course/get/`, {
-    method: "GET",
-    headers: {
-      "Content-type": "application/json",
-      Authorization: `Token ${token}`,
-    },
-  });
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, title")
+    .order("title");
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error getting courses: ", errorText);
-    throw new Error(errorText);
+  if (error) {
+    console.error("Error getting courses:", error);
+    throw new Error(error.message);
   }
-  let course_list = []; // stores courses name and their id
-  const data = await response.json();
-  for (let i = 0; i < data.length; i++) {
-    course_list.push({
-      id: data[i]["course_id"],
-      name: data[i]["course_name"],
-    });
-  }
-  localStorage.setItem("course_list", JSON.stringify(course_list));
-  return data;
+
+  const courseList = (data || []).map((c) => ({ id: c.id, name: c.title }));
+  localStorage.setItem("course_list", JSON.stringify(courseList));
+  return data || [];
 };
 
-export const lessons = async (token) => {
-  let course_list = JSON.parse(localStorage.getItem("course_list"));
-  if (course_list === null) {
-    // await courses();
-    course_list = JSON.parse(localStorage.getItem("course_list"));
+export const lessons = async () => {
+  const courseList = JSON.parse(localStorage.getItem("course_list") || "[]");
+  if (!courseList.length) {
+    await courses();
+    return lessons();
   }
-  let data = [];
-  for (let i = 0; i < course_list.length; i++) {
-    const response = await fetch(`${API_URL}/lesson/get/${course_list[i].id}/`, {
-      method: "GET",
-      headers: {
-        "Content-type": "application/json",
-        Authorization: `Token ${token}`,
-      },
-    });
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Error getting lesson: ", errorText);
-      throw new Error(errorText);
-    }
-    const lessons = await response.json();
-    lessons.lessons.forEach((lesson) => {
-      data.push({
-        course_name: course_list[i].name,
+
+  const allLessons = [];
+  for (const course of courseList) {
+    const { data: lessonRows, error } = await supabase
+      .from("lessons")
+      .select("id, title, description")
+      .eq("course_id", course.id);
+
+    if (error) throw new Error(error.message);
+    (lessonRows || []).forEach((lesson) => {
+      allLessons.push({
+        course_name: course.name,
         uuid: lesson.id,
         title: lesson.title,
-        description: lesson.description,
+        description: lesson.description || "",
       });
     });
   }
-
-  return data;
+  return allLessons;
 };
 
 export const GetUsers = async () => {
-  const response = await fetch(`${API_URL}/user/`, {
-    method: "GET",
-    headers: {
-      Authorization: `Token ${localStorage.getItem("authToken")}`,
-    },
-  });
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name, role, avatar_url")
+    .order("created_at", { ascending: false });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error getting lesson: ", errorText);
-    throw new Error(errorText);
+  if (error) {
+    console.error("Error getting users:", error);
+    throw new Error(error.message);
   }
-  const data = await response.json();
-  return data;
+
+  return (data || []).map(mapProfileToUser);
 };
 
 export const editUser = async (id, email, firstname, lastname, role) => {
-  const token = localStorage.getItem("authToken");
-
-  const response = await fetch(`${API_URL}/user/edit/${id}/`, {
-    method: "PATCH",
-    headers: {
-      Authorization: `Token ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      email: email,
-      firstname: firstname,
-      lastname: lastname,
+  const { error } = await supabase
+    .from("profiles")
+    .update({
+      email: email || undefined,
+      first_name: firstname,
+      last_name: lastname,
       role: role,
-    }),
-  });
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error editing user: ", errorText);
-    throw new Error(errorText);
-  }
-  return await response.json();
+  if (error) throw new Error(error.message);
+
+  const { data } = await supabase
+    .from("profiles")
+    .select("id, email, first_name, last_name, role, avatar_url")
+    .eq("id", id)
+    .single();
+
+  return data ? mapProfileToUser(data) : null;
 };
 
 export const deleteUser = async (id) => {
-  const token = localStorage.getItem("authToken");
-  const response = await fetch(`${API_URL}/user/${id}/`, {
-    method: "DELETE",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Token ${token}`,
-    },
-  });
+  const { error } = await supabase.from("profiles").delete().eq("id", id);
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Error deleting user: ", errorText);
-    throw new Error(errorText);
-  }
+  if (error) throw new Error(error.message);
   return { success: true };
 };

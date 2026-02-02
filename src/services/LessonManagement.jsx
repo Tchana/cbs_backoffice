@@ -1,67 +1,80 @@
-const API_URL = "https://mardoche.pythonanywhere.com";
+import { supabase } from "../lib/supabase";
 
 export const CreateLesson = async (
   courseId,
-  lesosnTitle,
+  lessonTitle,
   lessonDescription,
   lessonFile
 ) => {
-  const Token = localStorage.getItem("authToken");
-
-  const formData = new FormData();
-  formData.append("course", courseId);
-  formData.append("title", lesosnTitle);
-  formData.append("description", lessonDescription);
-  formData.append("file", lessonFile);
-
-  const response = await fetch(`${API_URL}/lesson/`, {
-    method: "POST",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
+  let fileUrl = null;
+  if (lessonFile && lessonFile instanceof File) {
+    const ext = lessonFile.name.split(".").pop();
+    const path = `${courseId}/${crypto.randomUUID()}.${ext}`;
+    const { error: uploadError } = await supabase.storage
+      .from("lesson-files")
+      .upload(path, lessonFile, { upsert: true });
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("lesson-files")
+        .getPublicUrl(path);
+      fileUrl = urlData.publicUrl;
+    }
   }
-  return await response.json();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .insert({
+      course_id: courseId,
+      title: lessonTitle,
+      description: lessonDescription || null,
+      file_url: fileUrl,
+    })
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const DeleteLesson = async (lessonId) => {
-  const Token = localStorage.getItem("authToken");
-
-  const response = await fetch(`${API_URL}/lesson/del/${lessonId}/`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
-  }
-  return await response.json();
+  const { error } = await supabase.from("lessons").delete().eq("id", lessonId);
+  if (error) throw new Error(error.message);
+  return { success: true };
 };
 
 export const EditLesson = async (lessonId, title, description, file) => {
-  const Token = localStorage.getItem("authToken");
-  const formData = new FormData();
+  const updates = { updated_at: new Date().toISOString() };
+  if (title != null) updates.title = title;
+  if (description != null) updates.description = description;
 
-  if (title) formData.append("title", title);
-  if (description) formData.append("description", description);
-  if (file) formData.append("file", file);
-
-  const response = await fetch(`${API_URL}/lesson/edit/${lessonId}/`, {
-    method: "PUT",
-    headers: {
-      Authorization: `Token ${Token}`,
-    },
-    body: formData,
-  });
-
-  if (!response.ok) {
-    throw new Error(JSON.stringify(await response.json()));
+  if (file && file instanceof File) {
+    const { data: lesson } = await supabase
+      .from("lessons")
+      .select("course_id")
+      .eq("id", lessonId)
+      .single();
+    if (lesson) {
+      const ext = file.name.split(".").pop();
+      const path = `${lesson.course_id}/${crypto.randomUUID()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from("lesson-files")
+        .upload(path, file, { upsert: true });
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("lesson-files")
+          .getPublicUrl(path);
+        updates.file_url = urlData.publicUrl;
+      }
+    }
   }
-  return await response.json();
+
+  const { data, error } = await supabase
+    .from("lessons")
+    .update(updates)
+    .eq("id", lessonId)
+    .select()
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 };

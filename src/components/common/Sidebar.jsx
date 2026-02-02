@@ -16,7 +16,15 @@ import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 
-const userRole = JSON.parse(localStorage.getItem("role"));
+const getStoredRole = () => {
+  try {
+    const raw = localStorage.getItem("role");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+};
+const userRole = getStoredRole();
 const SIDEBAR_ITEMS = [];
 if (userRole === "admin") {
   SIDEBAR_ITEMS.push(
