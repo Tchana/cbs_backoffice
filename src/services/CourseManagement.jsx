@@ -45,7 +45,7 @@ export const CreateCourse = async (
       teacher_id: teacher.id,
       course_cover_url: courseCoverUrl,
     })
-    .select("id, title, description, level, teacher_id, course_cover_url")
+    .select("id, title, description, level, teacher_id, course_cover_url, created_at")
     .single();
 
   if (error) throw new Error(error.message);
@@ -58,6 +58,7 @@ export const CreateCourse = async (
 
   return {
     ...data,
+    createdAt: data?.created_at || null,
     teacher: teacherRow
       ? {
           uuid: teacherRow.id,
@@ -72,7 +73,7 @@ export const CreateCourse = async (
 export const GetCourses = async () => {
   const { data: coursesData, error: coursesError } = await supabase
     .from("courses")
-    .select("id, title, description, level, teacher_id, course_cover_url")
+    .select("id, title, description, level, teacher_id, course_cover_url, created_at")
     .order("created_at", { ascending: false });
 
   if (coursesError) throw new Error(coursesError.message);
@@ -98,6 +99,7 @@ export const GetCourses = async () => {
       id: l.id,
       title: l.title,
       description: l.description,
+      file: l.file_url,
       file_url: l.file_url,
     });
     return acc;
@@ -120,6 +122,7 @@ export const GetCourses = async () => {
           }
         : null,
       course_cover_url: row.course_cover_url,
+      createdAt: row.created_at || null,
       lessons: lessonsByCourse[row.id] || [],
     };
   });

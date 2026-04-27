@@ -1,5 +1,14 @@
 import { supabase } from "../lib/supabase";
 
+const ensurePdfFile = (file) => {
+  if (!file || !(file instanceof File)) return;
+  const isPdfType = file.type === "application/pdf";
+  const isPdfExt = file.name.toLowerCase().endsWith(".pdf");
+  if (!isPdfType && !isPdfExt) {
+    throw new Error("Only PDF files are allowed for lessons.");
+  }
+};
+
 export const CreateLesson = async (
   courseId,
   lessonTitle,
@@ -8,6 +17,7 @@ export const CreateLesson = async (
 ) => {
   let fileUrl = null;
   if (lessonFile && lessonFile instanceof File) {
+    ensurePdfFile(lessonFile);
     const ext = lessonFile.name.split(".").pop();
     const path = `${courseId}/${crypto.randomUUID()}.${ext}`;
     const { error: uploadError } = await supabase.storage
@@ -43,11 +53,12 @@ export const DeleteLesson = async (lessonId) => {
 };
 
 export const EditLesson = async (lessonId, title, description, file) => {
-  const updates = { updated_at: new Date().toISOString() };
+  const updates = {};
   if (title != null) updates.title = title;
   if (description != null) updates.description = description;
 
   if (file && file instanceof File) {
+    ensurePdfFile(file);
     const { data: lesson } = await supabase
       .from("lessons")
       .select("course_id")

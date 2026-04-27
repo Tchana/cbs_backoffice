@@ -126,7 +126,16 @@ const LessonsTable = ({ updateLessonsStats }) => {
   // Handle Input Changes
   const handleInputChange = (e, field) => {
     if (field === "file") {
-      setSelectedValues({ ...selectedValues, [field]: e.target.files[0] });
+      const file = e.target.files?.[0];
+      if (!file) return;
+      const isPdfType = file.type === "application/pdf";
+      const isPdfExt = file.name.toLowerCase().endsWith(".pdf");
+      if (!isPdfType && !isPdfExt) {
+        alert("Only PDF files are allowed.");
+        e.target.value = "";
+        return;
+      }
+      setSelectedValues({ ...selectedValues, [field]: file });
     } else {
       setSelectedValues({ ...selectedValues, [field]: e.target.value });
     }
@@ -285,7 +294,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
           <input
             type="file"
             placeholder="File"
-            accept="*"
+            accept=".pdf,application/pdf"
             className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
             onChange={(e) => handleInputChange(e, "file")}
           />

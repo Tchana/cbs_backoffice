@@ -37,6 +37,7 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const [editDescription, setEditDescription] = useState("");
   const [editFile, setEditFile] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [editError, setEditError] = useState("");
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -88,6 +89,7 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
 
   const handleEditLesson = async (lessonId) => {
     setIsEditing(true);
+    setEditError("");
     try {
       await runWithLoader(() =>
         EditLesson(
@@ -104,6 +106,7 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
       onLessonChange?.();
     } catch (error) {
       console.error("Error editing lesson:", error);
+      setEditError(error.message || "Failed to edit lesson.");
     } finally {
       setIsEditing(false);
     }
@@ -112,8 +115,9 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const startEditing = (lesson) => {
     setEditingLesson(lesson);
     setEditTitle(lesson.title);
-    setEditDescription(lesson.description);
+    setEditDescription(lesson.description || "");
     setEditFile(null);
+    setEditError("");
   };
 
   return createPortal(
@@ -185,7 +189,9 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
               <div>
                 <label className="text-gray-400 text-sm">Created At</label>
                 <p className="text-white font-medium">
-                  {new Date(course.createdAt).toLocaleDateString()}
+                  {course.createdAt
+                    ? new Date(course.createdAt).toLocaleDateString()
+                    : "N/A"}
                 </p>
               </div>
             </div>
@@ -511,10 +517,14 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                     </label>
                     <input
                       type="file"
+                      accept=".pdf,application/pdf"
                       onChange={(e) => setEditFile(e.target.files[0])}
                       className="w-full px-3 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
                   </div>
+                  {editError && (
+                    <p className="text-sm text-red-400">{editError}</p>
+                  )}
                   <div className="flex justify-end space-x-3">
                     <button
                       type="button"
