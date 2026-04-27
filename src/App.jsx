@@ -13,6 +13,8 @@ import BlogsPage from "./pages/BlogsPage";
 import LessonsPage from "./pages/LessonsPage";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ForgotPasswordVerifyPage from "./pages/ForgotPasswordVerifyPage";
 
 // Layout component for authenticated routes
 const AuthenticatedLayout = () => (
@@ -119,6 +121,18 @@ function App() {
         path="/login"
         element={
           !isAuthenticated ? <AuthPage /> : <Navigate to="/overview" replace />
+        }
+      />
+      <Route
+        path="/forgot-password"
+        element={
+          !isAuthenticated ? <ForgotPasswordPage /> : <Navigate to="/overview" replace />
+        }
+      />
+      <Route
+        path="/forgot-password/verify"
+        element={
+          !isAuthenticated ? <ForgotPasswordVerifyPage /> : <Navigate to="/overview" replace />
         }
       />
 

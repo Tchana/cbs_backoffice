@@ -231,7 +231,15 @@ function AuthPage() {
                 )}
               </button>
             </div>
-            <Components.Anchor href="#">Forgot your password?</Components.Anchor>
+            <Components.Anchor
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                navigate("/forgot-password");
+              }}
+            >
+              Forgot your password?
+            </Components.Anchor>
             <Components.Button type="submit">Login</Components.Button>
           </Components.Form>
         </Components.SignInContainer>

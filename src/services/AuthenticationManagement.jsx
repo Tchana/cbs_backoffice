@@ -187,3 +187,58 @@ export const updatePassword = async (email, password) => {
   const { error } = await supabase.auth.updateUser({ password });
   if (error) throw new Error(error.message);
 };
+
+export const sendPasswordResetOtp = async (email) => {
+  const { error } = await supabase.auth.signInWithOtp({
+    email,
+    options: {
+      shouldCreateUser: false,
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to send OTP");
+  }
+};
+
+export const validateAdminEmailForReset = async (email) => {
+  const { data, error } = await supabase.functions.invoke("validate-admin-reset", {
+    body: { email },
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to validate account");
+  }
+
+  if (data?.error) {
+    throw new Error(data.error);
+  }
+};
+
+export const verifyPasswordResetOtp = async (email, token) => {
+  const { data, error } = await supabase.auth.verifyOtp({
+    email,
+    token,
+    type: "email",
+  });
+
+  if (error) {
+    throw new Error(error.message || "Invalid OTP");
+  }
+
+  if (!data?.session) {
+    throw new Error("OTP verification failed. No session returned.");
+  }
+};
+
+export const resetPasswordWithOtp = async (newPassword) => {
+  const { error } = await supabase.auth.updateUser({
+    password: newPassword,
+  });
+
+  if (error) {
+    throw new Error(error.message || "Failed to reset password");
+  }
+
+  await supabase.auth.signOut();
+};
