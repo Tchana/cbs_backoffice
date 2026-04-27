@@ -19,6 +19,8 @@ const UsersTable = ({ updateUserStats }) => {
   const [registerUserId, setRegistrationUserId] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [editError, setEditError] = useState("");
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const confirmButtonRef = useRef(null);
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
@@ -71,6 +73,8 @@ const UsersTable = ({ updateUserStats }) => {
   const handleCloseModal = () => {
     setRegistrationUserId(false);
     setEditingUserId(null);
+    setEditError("");
+    setIsSavingEdit(false);
     setEditValues({});
   };
 
@@ -101,6 +105,7 @@ const UsersTable = ({ updateUserStats }) => {
 
   // Start Editing
   const handleEditClick = (user) => {
+    setEditError("");
     setEditingUserId(user.id);
     setEditValues({
       firstName: user.firstName,
@@ -124,6 +129,8 @@ const UsersTable = ({ updateUserStats }) => {
   const handleConfirmEdit = async () => {
     if (!editingUserId) return;
     try {
+      setEditError("");
+      setIsSavingEdit(true);
       const updatedUsers = await runWithLoader(async () => {
         await editUser(
           editingUserId,
@@ -131,7 +138,7 @@ const UsersTable = ({ updateUserStats }) => {
           editValues.firstName,
           editValues.lastName,
           "admin",
-          null,
+          undefined,
           editValues.p_image || null
         );
         return GetUsers();
@@ -143,6 +150,9 @@ const UsersTable = ({ updateUserStats }) => {
       handleCloseModal();
     } catch (error) {
       console.error("Error editing user:", error);
+      setEditError(error.message || "Failed to save changes.");
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -281,6 +291,8 @@ const UsersTable = ({ updateUserStats }) => {
             title={editingUserId ? "Edit User" : "Register User"}
             submitLabel={editingUserId ? "Save Changes" : "Register"}
             isEdit={Boolean(editingUserId)}
+            errorMessage={editError}
+            isSubmitting={isSavingEdit}
           />
         )}
       </AnimatePresence>

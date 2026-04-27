@@ -72,16 +72,18 @@ export const GetUsers = async () => {
 };
 
 export const editUser = async (id, email, firstname, lastname, role, phone, pImage) => {
+  const updates = {
+    updated_at: new Date().toISOString(),
+  };
+  if (email !== undefined) updates.email = email || undefined;
+  if (firstname !== undefined) updates.first_name = firstname;
+  if (lastname !== undefined) updates.last_name = lastname;
+  if (phone !== undefined) updates.phone = phone || null;
+  if (role !== undefined) updates.role = role;
+
   const { error } = await supabase
     .from("profiles")
-    .update({
-      email: email || undefined,
-      first_name: firstname,
-      last_name: lastname,
-      phone: phone || null,
-      role: role,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("id", id);
 
   if (error) throw new Error(error.message);

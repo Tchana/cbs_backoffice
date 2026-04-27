@@ -20,6 +20,7 @@ const TeacherTable = ({ updateUserStats }) => {
   const [registerUserId, setRegistrationUserId] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const confirmButtonRef = useRef(null);
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
@@ -74,6 +75,7 @@ const TeacherTable = ({ updateUserStats }) => {
   const handleCloseModal = () => {
     setRegistrationUserId(false);
     setEditingUserId(null);
+    setIsSavingEdit(false);
     setEditValues({});
   };
 
@@ -128,6 +130,7 @@ const TeacherTable = ({ updateUserStats }) => {
   const handleConfirmEdit = async () => {
     if (!editingUserId) return;
     try {
+      setIsSavingEdit(true);
       const updatedUsers = await runWithLoader(async () => {
         await editUser(
           editingUserId,
@@ -147,6 +150,8 @@ const TeacherTable = ({ updateUserStats }) => {
       handleCloseModal();
     } catch (error) {
       console.error("Error editing user:", error);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -288,6 +293,7 @@ const TeacherTable = ({ updateUserStats }) => {
             title={editingUserId ? "Edit Teacher" : "Register User"}
             submitLabel={editingUserId ? "Save Changes" : "Register"}
             isEdit={Boolean(editingUserId)}
+            isSubmitting={isSavingEdit}
           />
         )}
       </AnimatePresence>

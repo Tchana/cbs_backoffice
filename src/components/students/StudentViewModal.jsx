@@ -53,7 +53,7 @@ const StudentViewModal = ({ user, onClose }) => {
             {/* Profile Image */}
             <div className="flex justify-center">
               <img
-                src={user.p_image || "/default-user.png"}
+                src={user.pImage || "/default-user.png"}
                 alt={`${user.firstName}'s profile`}
                 className="w-24 h-24 rounded-full object-cover border-2 border-indigo-500"
               />

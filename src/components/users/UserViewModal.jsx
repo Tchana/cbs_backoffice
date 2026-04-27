@@ -5,6 +5,7 @@ import { useEffect } from "react";
 
 const UserViewModal = ({ user, onClose }) => {
   if (!user) return null;
+  const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -52,11 +53,17 @@ const UserViewModal = ({ user, onClose }) => {
           <div className="space-y-6">
             {/* Profile Image */}
             <div className="flex justify-center">
-              <img
-                src={user.p_image || "/default-user.png"}
-                alt={`${user.firstName}'s profile`}
-                className="w-24 h-24 rounded-full object-cover border-2 border-indigo-500"
-              />
+              {user.pImage ? (
+                <img
+                  src={user.pImage}
+                  alt={`${user.firstName}'s profile`}
+                  className="w-24 h-24 rounded-full object-cover border-2 border-indigo-500"
+                />
+              ) : (
+                <div className="w-24 h-24 rounded-full border-2 border-indigo-500 bg-indigo-600 flex items-center justify-center text-white text-2xl font-semibold">
+                  {initials}
+                </div>
+              )}
             </div>
 
             {/* User Details */}

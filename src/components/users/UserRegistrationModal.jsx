@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Upload, Image as ImageIcon } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
+import LoadingSpinner from "../common/LoadingSpinner";
 
 const UserRegistrationModal = ({
   onClose,
@@ -12,6 +13,8 @@ const UserRegistrationModal = ({
   title = "Register User",
   submitLabel = "Register",
   isEdit = false,
+  errorMessage = "",
+  isSubmitting = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(editValues.p_image || null);
@@ -207,11 +210,16 @@ const UserRegistrationModal = ({
             </div>
 
             {/* Register Button */}
+            {errorMessage && (
+              <p className="text-sm text-red-400">{errorMessage}</p>
+            )}
             <button
               onClick={onRegister}
-              className="w-full bg-indigo-600 text-white rounded-lg px-4 py-2 mt-6 hover:bg-indigo-700 transition-colors duration-200"
+              disabled={isSubmitting}
+              className="w-full bg-indigo-600 text-white rounded-lg px-4 py-2 mt-6 hover:bg-indigo-700 transition-colors duration-200 disabled:opacity-70 flex items-center justify-center gap-2"
             >
-              {submitLabel}
+              {isSubmitting && <LoadingSpinner inline size="sm" />}
+              {isSubmitting ? "Saving..." : submitLabel}
             </button>
           </div>
         </motion.div>
