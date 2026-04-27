@@ -36,10 +36,16 @@ export const login = async (email, password) => {
     .eq("id", session.user.id)
     .single();
 
+  const role = profile?.role ?? "teacher";
+  if (role === "student") {
+    await supabase.auth.signOut();
+    throw new Error("Student account can't be logged in");
+  }
+
   return {
     token: session.access_token,
     user: session.user,
-    role: profile?.role ?? "teacher",
+    role,
   };
 };
 

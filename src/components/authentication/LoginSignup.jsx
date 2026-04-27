@@ -61,11 +61,6 @@ function AuthPage() {
         return;
       }
 
-      if (data.role === "student") {
-        setError("Student account not allowed");
-        return;
-      }
-
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("auth", "true");
       localStorage.setItem("role", JSON.stringify(data.role));
@@ -258,9 +253,9 @@ function AuthPage() {
               <Components.Paragraph>
                 To keep connected with us please login with your personal info
               </Components.Paragraph>
-              <Components.GhostButton onClick={handleToggle}>
+              {/* <Components.GhostButton onClick={handleToggle}>
                 Sign Up
-              </Components.GhostButton>
+              </Components.GhostButton> */}
             </Components.RightOverlayPanel>
           </Components.Overlay>
         </Components.OverlayContainer>
