@@ -22,7 +22,7 @@ const SIDEBAR_ITEMS = [];
 if (isAdmin()) {
   SIDEBAR_ITEMS.push(
     { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
-    { name: "Users", icon: Users, color: "#EC4899", href: "/users" },
+    { name: "Admin", icon: Users, color: "#EC4899", href: "/users" },
     { name: "Students", icon: Users, color: "#EC48FC", href: "/students" },
     { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
     { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },

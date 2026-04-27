@@ -20,7 +20,6 @@ const TeacherTable = ({ updateUserStats }) => {
   const [registerUserId, setRegistrationUserId] = useState(false);
   const [editingUserId, setEditingUserId] = useState(null);
   const [editValues, setEditValues] = useState({});
-  const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
@@ -50,6 +49,7 @@ const TeacherTable = ({ updateUserStats }) => {
         user.firstName.toLowerCase().includes(term) ||
         user.lastName.toLowerCase().includes(term) ||
         user.email.toLowerCase().includes(term) ||
+        user.phone.toLowerCase().includes(term) ||
         user.role.toLowerCase().includes(term)
     );
 
@@ -65,14 +65,15 @@ const TeacherTable = ({ updateUserStats }) => {
       firstName: "",
       lastName: "",
       email: "",
+      phone: "",
       password: "",
-      role: "teacher",
     });
   };
 
   // Close modal
   const handleCloseModal = () => {
     setRegistrationUserId(false);
+    setEditingUserId(null);
     setEditValues({});
   };
 
@@ -85,8 +86,9 @@ const TeacherTable = ({ updateUserStats }) => {
           editValues.password,
           editValues.firstName,
           editValues.lastName,
-          editValues.role,
-          editValues.p_image || null
+          "teacher",
+          editValues.p_image || null,
+          editValues.phone
         )
       );
       const updatedUsers = await runWithLoader(() => GetUsers());
@@ -107,6 +109,8 @@ const TeacherTable = ({ updateUserStats }) => {
       firstName: user.firstName,
       lastName: user.lastName,
       email: user.email,
+      phone: user.phone || "",
+      pImage: user.pImage || null,
       role: user.role,
     });
   };
@@ -121,15 +125,18 @@ const TeacherTable = ({ updateUserStats }) => {
   };
 
   // Confirm Edits
-  const handleConfirmEdit = async (userId) => {
+  const handleConfirmEdit = async () => {
+    if (!editingUserId) return;
     try {
       const updatedUsers = await runWithLoader(async () => {
         await editUser(
-          userId,
+          editingUserId,
           editValues.email,
           editValues.firstName,
           editValues.lastName,
-          editValues.role
+          editValues.role,
+          editValues.phone,
+          editValues.p_image || null
         );
         return GetUsers();
       });
@@ -137,7 +144,7 @@ const TeacherTable = ({ updateUserStats }) => {
       setUsersList(teacherUsers);
       setFilteredUsers(teacherUsers);
       updateUserStats(teacherUsers);
-      setEditingUserId(null);
+      handleCloseModal();
     } catch (error) {
       console.error("Error editing user:", error);
     }
@@ -162,6 +169,7 @@ const TeacherTable = ({ updateUserStats }) => {
           user.firstName.toLowerCase().includes(searchTerm) ||
           user.lastName.toLowerCase().includes(searchTerm) ||
           user.email.toLowerCase().includes(searchTerm) ||
+          user.phone.toLowerCase().includes(searchTerm) ||
           user.role.toLowerCase().includes(searchTerm)
       );
       setFilteredUsers(filtered);
@@ -268,15 +276,18 @@ const TeacherTable = ({ updateUserStats }) => {
         </div>
       </div>
 
-      {/* Registration Modal */}
+      {/* Registration / Edit Modal */}
       <AnimatePresence>
-        {registerUserId && (
+        {(registerUserId || editingUserId) && (
           <TeacherRegistrationModal
             onClose={handleCloseModal}
-            onRegister={handleConfirmRegistration}
+            onRegister={editingUserId ? handleConfirmEdit : handleConfirmRegistration}
             editValues={editValues}
             handleInputChange={handleInputChange}
             setEditValues={setEditValues}
+            title={editingUserId ? "Edit Teacher" : "Register User"}
+            submitLabel={editingUserId ? "Save Changes" : "Register"}
+            isEdit={Boolean(editingUserId)}
           />
         )}
       </AnimatePresence>
@@ -293,7 +304,7 @@ const TeacherTable = ({ updateUserStats }) => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              {["First Name", "Last Name", "Email", "Actions"].map(
+              {["First Name", "Last Name", "Email", "Phone", "Actions"].map(
                 (heading) => (
                   <th
                     key={heading}
@@ -313,34 +324,16 @@ const TeacherTable = ({ updateUserStats }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                ref={editingUserId === user.id ? editRowRef : null}
               >
-                {["firstName", "lastName", "email"].map((field) => (
+                {["firstName", "lastName", "email", "phone"].map((field) => (
                   <td key={field} className="px-6 py-4 whitespace-nowrap">
-                    {editingUserId === user.id ? (
-                      <input
-                        type="text"
-                        defaultValue={user[field]}
-                        onChange={(e) => handleInputChange(e, field)}
-                        className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
-                      />
-                    ) : (
-                      <div className="text-sm font-medium text-gray-100">
-                        {user[field]}
-                      </div>
-                    )}
+                    <div className="text-sm font-medium text-gray-100">
+                      {user[field]}
+                    </div>
                   </td>
                 ))}
                 <td className="px-6 py-4 text-sm text-gray-300">
-                  {editingUserId === user.id ? (
-                    <button
-                      onClick={() => handleConfirmEdit(user.id)}
-                      ref={confirmButtonRef}
-                      className="text-green-400 hover:text-green-300"
-                    >
-                      <Check size={18} />
-                    </button>
-                  ) : deletingUserId === user.id ? (
+                  {deletingUserId === user.id ? (
                     <button
                       onClick={() => handleConfirmDelete(user.id)}
                       ref={confirmButtonRef}

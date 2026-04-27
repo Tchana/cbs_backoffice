@@ -8,7 +8,7 @@ export const WhoAmI = async () => {
 
   const { data: profile, error } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, avatar_url")
+    .select("id, email, first_name, last_name, avatar_url, role")
     .eq("id", user.id)
     .single();
 
@@ -18,6 +18,7 @@ export const WhoAmI = async () => {
 
   return {
     uuid: profile.id,
+    role: profile.role || "",
     email: profile.email || user.email,
     firstName: profile.first_name || "",
     lastName: profile.last_name || "",

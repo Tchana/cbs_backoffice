@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { email, password, first_name, last_name, role } = body;
+    const { email, password, first_name, last_name, role, phone } = body;
 
     if (!email || !password || !first_name || !last_name || !role) {
       return new Response(
@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
       email,
       password,
       email_confirm: true,
-      user_metadata: { first_name, last_name, role },
+      user_metadata: { first_name, last_name, role, phone: phone || null },
     });
 
     if (createError) {
@@ -103,6 +103,13 @@ Deno.serve(async (req) => {
         JSON.stringify({ error: createError.message }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
+    }
+
+    if (newUser.user?.id && phone) {
+      await adminClient
+        .from("profiles")
+        .update({ phone })
+        .eq("id", newUser.user.id);
     }
 
     return new Response(

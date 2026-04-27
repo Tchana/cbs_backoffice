@@ -7,6 +7,8 @@ const BookRegistrationModal = ({
   onRegister,
   editValues,
   handleInputChange,
+  categoryOptions = [],
+  categoryLoadError = "",
   title = "Add New Book",
   submitLabel = "Add Book",
 }) => {
@@ -69,11 +71,15 @@ const BookRegistrationModal = ({
                 className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Select a category</option>
-                <option value="bible">Bible</option>
-                <option value="commentary">Commentary</option>
-                <option value="dictionary">Dictionary</option>
-                <option value="other">Other</option>
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
               </select>
+              {categoryLoadError && (
+                <p className="mt-1 text-xs text-red-400">{categoryLoadError}</p>
+              )}
             </div>
 
             <div>

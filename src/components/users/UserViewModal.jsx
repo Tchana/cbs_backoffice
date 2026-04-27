@@ -88,7 +88,7 @@ const UserViewModal = ({ user, onClose }) => {
               <h3 className="text-lg font-medium text-white mb-4">Activity</h3>
               <div className="space-y-2">
                 <p className="text-gray-400 text-sm">
-                  Member since: {new Date(user.createdAt).toLocaleDateString()}
+                  Member since: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
                 </p>
                 {user.role === "teacher" && (
                   <div>

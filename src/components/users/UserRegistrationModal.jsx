@@ -9,10 +9,17 @@ const UserRegistrationModal = ({
   editValues,
   handleInputChange,
   setEditValues,
+  title = "Register User",
+  submitLabel = "Register",
+  isEdit = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(editValues.p_image || null);
   const fileInputRef = useRef(null);
+
+  useEffect(() => {
+    setPreviewUrl(editValues.p_image || editValues.pImage || null);
+  }, [editValues.p_image, editValues.pImage]);
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -87,9 +94,7 @@ const UserRegistrationModal = ({
             <X size={24} />
           </button>
 
-          <h2 className="text-xl font-semibold text-white mb-6">
-            Register User
-          </h2>
+          <h2 className="text-xl font-semibold text-white mb-6">{title}</h2>
 
           <div className="space-y-4">
             {/* Profile Picture Upload */}
@@ -186,29 +191,19 @@ const UserRegistrationModal = ({
                   required
                 />
               </div>
-              <div className="col-span-2">
-                <label className="text-gray-400 text-sm">Password</label>
-                <input
-                  type="password"
-                  id="password"
-                  value={editValues.password}
-                  onChange={(e) => handleInputChange(e, "password")}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-gray-400 text-sm">Role</label>
-                <select
-                  id="role"
-                  value={editValues.role}
-                  onChange={(e) => handleInputChange(e, "role")}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  required
-                >
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
+              {!isEdit && (
+                <div className="col-span-2">
+                  <label className="text-gray-400 text-sm">Password</label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={editValues.password}
+                    onChange={(e) => handleInputChange(e, "password")}
+                    className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    required
+                  />
+                </div>
+              )}
             </div>
 
             {/* Register Button */}
@@ -216,7 +211,7 @@ const UserRegistrationModal = ({
               onClick={onRegister}
               className="w-full bg-indigo-600 text-white rounded-lg px-4 py-2 mt-6 hover:bg-indigo-700 transition-colors duration-200"
             >
-              Register
+              {submitLabel}
             </button>
           </div>
         </motion.div>

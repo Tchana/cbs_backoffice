@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Search, Plus, RefreshCw, Edit, Trash2 } from "lucide-react";
-import { GetBooks, AddBook, EditBook, DeleteBook } from "../../services/BookManagement";
+import {
+  GetBooks,
+  AddBook,
+  EditBook,
+  DeleteBook,
+  GetBookCategories,
+} from "../../services/BookManagement";
 import BookRegistrationModal from "./BookRegistrationModal";
 
 import { isAdmin } from "../../lib/auth";
@@ -14,6 +20,8 @@ const BookList = () => {
   const [filteredBooks, setFilteredBooks] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [categoryLoadError, setCategoryLoadError] = useState("");
   const [isRegistering, setIsRegistering] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [bookToDelete, setBookToDelete] = useState(null);
@@ -30,7 +38,20 @@ const BookList = () => {
 
   useEffect(() => {
     refreshData();
+    loadCategoryOptions();
   }, []);
+
+  const loadCategoryOptions = async () => {
+    try {
+      setCategoryLoadError("");
+      const categories = await GetBookCategories();
+      setCategoryOptions(categories);
+    } catch (err) {
+      console.error("Error loading book categories:", err);
+      setCategoryOptions([]);
+      setCategoryLoadError("Failed to load categories from Supabase.");
+    }
+  };
 
   const refreshData = async () => {
     try {
@@ -65,7 +86,8 @@ const BookList = () => {
     }
   };
 
-  const handleRegistrationClick = () => {
+  const handleRegistrationClick = async () => {
+    await loadCategoryOptions();
     setEditingBook(null);
     setIsRegistering(true);
     setEditValues({
@@ -79,7 +101,8 @@ const BookList = () => {
     });
   };
 
-  const handleEditClick = (book) => {
+  const handleEditClick = async (book) => {
+    await loadCategoryOptions();
     setEditingBook(book);
     setEditValues({
       title: book.title ?? "",
@@ -252,6 +275,8 @@ const BookList = () => {
             onRegister={editingBook ? handleConfirmEdit : handleConfirmRegistration}
             editValues={editValues}
             handleInputChange={handleInputChange}
+            categoryOptions={categoryOptions}
+            categoryLoadError={categoryLoadError}
             title={editingBook ? "Edit Book" : "Add New Book"}
             submitLabel={editingBook ? "Save" : "Add Book"}
           />

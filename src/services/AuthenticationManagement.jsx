@@ -59,7 +59,8 @@ export const createUserAsAdmin = async (
   firstname,
   lastname,
   role,
-  p_image
+  p_image,
+  phone
 ) => {
   const { data: { session }, error: sessionError } = await supabase.auth.getSession();
   if (sessionError || !session?.access_token) {
@@ -84,6 +85,7 @@ export const createUserAsAdmin = async (
       first_name: firstname,
       last_name: lastname,
       role: role || "teacher",
+      phone: phone || null,
     },
     headers: {
       Authorization: `Bearer ${token}`,

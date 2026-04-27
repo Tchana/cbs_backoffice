@@ -7,8 +7,10 @@ function mapProfileToUser(row) {
     email: row.email,
     firstName: row.first_name || "",
     lastName: row.last_name || "",
+    phone: row.phone || "",
     role: row.role || "teacher",
     pImage: row.avatar_url,
+    createdAt: row.created_at || null,
   };
 }
 
@@ -58,7 +60,7 @@ export const lessons = async () => {
 export const GetUsers = async () => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, role, avatar_url")
+    .select("id, email, first_name, last_name, phone, role, avatar_url, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -69,13 +71,14 @@ export const GetUsers = async () => {
   return (data || []).map(mapProfileToUser);
 };
 
-export const editUser = async (id, email, firstname, lastname, role) => {
+export const editUser = async (id, email, firstname, lastname, role, phone, pImage) => {
   const { error } = await supabase
     .from("profiles")
     .update({
       email: email || undefined,
       first_name: firstname,
       last_name: lastname,
+      phone: phone || null,
       role: role,
       updated_at: new Date().toISOString(),
     })
@@ -83,9 +86,27 @@ export const editUser = async (id, email, firstname, lastname, role) => {
 
   if (error) throw new Error(error.message);
 
+  if (pImage && pImage instanceof File) {
+    const fileExt = pImage.name.split(".").pop();
+    const fileName = `${id}/avatar.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, pImage, { upsert: true });
+
+    if (!uploadError) {
+      const { data: urlData } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(fileName);
+      await supabase
+        .from("profiles")
+        .update({ avatar_url: urlData.publicUrl })
+        .eq("id", id);
+    }
+  }
+
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, role, avatar_url")
+    .select("id, email, first_name, last_name, phone, role, avatar_url, created_at")
     .eq("id", id)
     .single();
 

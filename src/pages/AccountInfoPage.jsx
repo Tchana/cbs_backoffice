@@ -59,7 +59,7 @@ const AccountInfoPage = () => {
                   {accountInfo.firstName} {accountInfo.lastName}
                 </h2>
                 <p className="text-sm sm:text-base text-gray-400">
-                  User ID: {accountInfo.uuid}
+                  Role: {accountInfo.role || "Not set"}
                 </p>
               </div>
             </div>
