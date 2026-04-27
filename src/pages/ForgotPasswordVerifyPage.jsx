@@ -83,6 +83,17 @@ const ForgotPasswordVerifyPage = () => {
           </Components.Anchor>
         </Components.Form>
       </Components.SignInContainer>
+
+      <Components.OverlayContainer $signIn>
+        <Components.Overlay $signIn>
+          <Components.RightOverlayPanel $signIn>
+            <Components.Title>Verify OTP</Components.Title>
+            <Components.Paragraph>
+              Enter the code from your email, then set your new password.
+            </Components.Paragraph>
+          </Components.RightOverlayPanel>
+        </Components.Overlay>
+      </Components.OverlayContainer>
     </Components.Container>
   );
 };

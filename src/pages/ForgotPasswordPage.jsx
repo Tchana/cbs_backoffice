@@ -46,6 +46,17 @@ const ForgotPasswordPage = () => {
           </Components.Anchor>
         </Components.Form>
       </Components.SignInContainer>
+
+      <Components.OverlayContainer $signIn>
+        <Components.Overlay $signIn>
+          <Components.RightOverlayPanel $signIn>
+            <Components.Title>Reset Password</Components.Title>
+            <Components.Paragraph>
+              Enter your admin email to receive a one-time verification code.
+            </Components.Paragraph>
+          </Components.RightOverlayPanel>
+        </Components.Overlay>
+      </Components.OverlayContainer>
     </Components.Container>
   );
 };
