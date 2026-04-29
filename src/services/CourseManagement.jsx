@@ -44,11 +44,26 @@ export const CreateCourse = async (
       level: level || null,
       teacher_id: teacher.id,
       course_cover_url: courseCoverUrl,
+      active: true,
     })
-    .select("id, title, description, level, teacher_id, course_cover_url, created_at")
+    .select("id, title, description, level, teacher_id, course_cover_url, active, created_at")
     .single();
 
   if (error) throw new Error(error.message);
+
+  // Keep forum in sync: every new course gets a room
+  // with the same name as the course title.
+  try {
+    await supabase.from("rooms").insert({
+      name: title,
+      description: description || `Course discussion for ${title}`,
+      is_private: false,
+      created_by: teacher.id,
+    });
+  } catch (roomErr) {
+    // Do not block course creation if room creation fails.
+    console.error("Course created but room creation failed:", roomErr);
+  }
 
   const { data: teacherRow } = await supabase
     .from("profiles")
@@ -73,7 +88,7 @@ export const CreateCourse = async (
 export const GetCourses = async () => {
   const { data: coursesData, error: coursesError } = await supabase
     .from("courses")
-    .select("id, title, description, level, teacher_id, course_cover_url, created_at")
+    .select("id, title, description, level, teacher_id, course_cover_url, active, created_at")
     .order("created_at", { ascending: false });
 
   if (coursesError) throw new Error(coursesError.message);
@@ -122,6 +137,7 @@ export const GetCourses = async () => {
           }
         : null,
       course_cover_url: row.course_cover_url,
+      active: row.active ?? true,
       createdAt: row.created_at || null,
       lessons: lessonsByCourse[row.id] || [],
     };
@@ -174,6 +190,21 @@ export const editCourse = async (
         }
       : null,
   };
+};
+
+export const setCourseActive = async (id, active) => {
+  const { data, error } = await supabase
+    .from("courses")
+    .update({
+      active,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id)
+    .select("id,active")
+    .single();
+
+  if (error) throw new Error(error.message);
+  return data;
 };
 
 export const deleteCourse = async (id) => {

@@ -19,6 +19,13 @@ import {
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
+import {
+  DeleteAssignment,
+  GetAssignmentsByCourse,
+  UpdateAssignment,
+} from "../../services/AssignmentManagement";
+import AssignmentCreateModal from "../assignments/AssignmentCreateModal";
+import AssignmentGradeModal from "../assignments/AssignmentGradeModal";
 
 const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const runWithLoader = useApiLoader().runWithLoader;
@@ -39,6 +46,34 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState("");
 
+  const [assignments, setAssignments] = useState([]);
+  const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
+  const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
+  const [assignmentToGrade, setAssignmentToGrade] = useState(null);
+  const [dueDateDraftById, setDueDateDraftById] = useState({});
+
+  const reloadAssignments = async () => {
+    try {
+      setIsLoadingAssignments(true);
+      const res = await runWithLoader(() =>
+        GetAssignmentsByCourse(course.id, { includeUnpublished: true })
+      );
+      setAssignments(res || []);
+      setDueDateDraftById(
+        (res || []).reduce((acc, a) => {
+          acc[a.id] = a.due_date
+            ? new Date(a.due_date).toISOString().slice(0, 16)
+            : "";
+          return acc;
+        }, {})
+      );
+    } catch (e) {
+      console.error("Error loading assignments:", e);
+    } finally {
+      setIsLoadingAssignments(false);
+    }
+  };
+
   // Prevent body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -46,6 +81,12 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
       document.body.style.overflow = "unset";
     };
   }, []);
+
+  useEffect(() => {
+    if (!course?.id) return;
+    reloadAssignments();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [course?.id]);
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
@@ -120,6 +161,44 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
     setEditError("");
   };
 
+  const handleToggleAssignmentPublished = async (assignment) => {
+    try {
+      await runWithLoader(() =>
+        UpdateAssignment(assignment.id, { published: !assignment.published })
+      );
+      await reloadAssignments();
+    } catch (error) {
+      console.error("Error updating assignment published status:", error);
+    }
+  };
+
+  const handleSaveAssignmentDueDate = async (assignmentId) => {
+    try {
+      const dueDateRaw = dueDateDraftById[assignmentId] || "";
+      await runWithLoader(() =>
+        UpdateAssignment(assignmentId, {
+          dueDate: dueDateRaw ? new Date(dueDateRaw).toISOString() : null,
+        })
+      );
+      await reloadAssignments();
+    } catch (error) {
+      console.error("Error updating assignment due date:", error);
+    }
+  };
+
+  const handleDeleteAssignment = async (assignmentId) => {
+    const ok = window.confirm(
+      "Delete this assignment? This also removes related questions/submissions."
+    );
+    if (!ok) return;
+    try {
+      await runWithLoader(() => DeleteAssignment(assignmentId));
+      await reloadAssignments();
+    } catch (error) {
+      console.error("Error deleting assignment:", error);
+    }
+  };
+
   return createPortal(
     <AnimatePresence>
       <div className="fixed inset-0 z-[99999] flex items-center justify-center">
@@ -138,7 +217,7 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
           transition={{ duration: 0.2 }}
-          className="relative bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto"
+          className="relative bg-gray-800 rounded-lg p-6 w-[96vw] max-w-6xl shadow-2xl max-h-[90vh] overflow-y-auto"
         >
           {/* Fixed Close Button */}
           <div className="sticky -top-6 right-0 z-10 flex justify-end bg-gray-800">
@@ -184,7 +263,13 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
               </div>
               <div>
                 <label className="text-gray-400 text-sm">Status</label>
-                <p className="text-green-400 font-medium">Active</p>
+                <p
+                  className={`font-medium ${
+                    course.active ? "text-green-400" : "text-gray-300"
+                  }`}
+                >
+                  {course.active ? "Active" : "Inactive"}
+                </p>
               </div>
               <div>
                 <label className="text-gray-400 text-sm">Created At</label>
@@ -430,6 +515,112 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
               </div>
             </div>
           </div>
+
+          {/* Assignments Section */}
+          <div className="pt-6 border-t border-gray-700">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center space-x-2">
+                <FileText className="w-5 h-5 text-indigo-500" />
+                <h3 className="text-lg font-medium text-white">Assignments</h3>
+              </div>
+
+              <button
+                onClick={() => setIsCreatingAssignment(true)}
+                className="flex items-center space-x-2 px-3 py-1 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors duration-200"
+              >
+                <Plus size={16} />
+                <span>Create</span>
+              </button>
+            </div>
+
+            {isLoadingAssignments ? (
+              <p className="text-gray-300 text-sm">Loading...</p>
+            ) : assignments.length === 0 ? (
+              <p className="text-gray-400 text-sm italic">
+                No assignments yet.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {assignments.map((a) => (
+                  <div
+                    key={a.id}
+                    className="bg-gray-700 rounded-lg p-3 flex items-start justify-between gap-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-white font-medium truncate">
+                        {a.title}
+                      </p>
+                      <p className="text-gray-300 text-sm">
+                        Status:{" "}
+                        <span className="text-green-400 font-medium">
+                          {a.published ? "Published" : "Draft"}
+                        </span>
+                      </p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="datetime-local"
+                          value={dueDateDraftById[a.id] || ""}
+                          onChange={(e) =>
+                            setDueDateDraftById((prev) => ({
+                              ...prev,
+                              [a.id]: e.target.value,
+                            }))
+                          }
+                          className="px-2 py-1 bg-gray-800 text-white rounded-md text-xs"
+                        />
+                        <button
+                          className="px-2 py-1 bg-gray-600 text-white rounded-md text-xs hover:bg-gray-500"
+                          onClick={() => handleSaveAssignmentDueDate(a.id)}
+                        >
+                          Save due date
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        className="px-3 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 transition-colors duration-200"
+                        onClick={() => setAssignmentToGrade(a)}
+                      >
+                        Grade
+                      </button>
+                      <button
+                        className="px-3 py-2 bg-yellow-600 text-white rounded-md hover:bg-yellow-500 transition-colors duration-200"
+                        onClick={() => handleToggleAssignmentPublished(a)}
+                      >
+                        {a.published ? "Unpublish" : "Publish"}
+                      </button>
+                      <button
+                        className="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-500 transition-colors duration-200"
+                        onClick={() => handleDeleteAssignment(a.id)}
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {isCreatingAssignment && (
+            <AssignmentCreateModal
+              course={course}
+              lessons={course.lessons || []}
+              onClose={() => setIsCreatingAssignment(false)}
+              onCreated={() => {
+                setIsCreatingAssignment(false);
+                reloadAssignments();
+              }}
+            />
+          )}
+
+          {assignmentToGrade && (
+            <AssignmentGradeModal
+              assignment={assignmentToGrade}
+              onClose={() => setAssignmentToGrade(null)}
+              onSaved={() => reloadAssignments()}
+            />
+          )}
 
           {/* Delete Confirmation Modal */}
           {lessonToDelete && (

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Navigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Users, BookOpen, GraduationCap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { GetCourses } from "../services/CourseManagement";
 import { GetUsers } from "../services/UsersManagement";
 import { GetBooks } from "../services/BookManagement";
@@ -14,6 +15,7 @@ import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const OverviewPage = () => {
   const runWithLoader = useApiLoader().runWithLoader;
+  const navigate = useNavigate();
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalCourses: 0,
@@ -111,24 +113,28 @@ const OverviewPage = () => {
             name="Total Users"
             value={stats.totalUsers}
             color="text-indigo-500"
+            onClick={() => navigate("/users")}
           />
           <StatCard
             icon={Users}
             name="Total Teachers"
             value={stats.totalteachers}
             color="text-indigo-500"
+            onClick={() => navigate("/teachers")}
           />
           <StatCard
             icon={Users}
             name="Total Students"
             value={stats.totalstudents}
             color="text-indigo-500"
+            onClick={() => navigate("/students")}
           />
           <StatCard
             icon={Users}
             name="Total Admins"
             value={stats.totaladmins}
             color="text-indigo-500"
+            onClick={() => navigate("/users")}
           />
 
           {/* Total Courses */}
@@ -137,6 +143,7 @@ const OverviewPage = () => {
             name="Total Courses"
             value={stats.totalCourses}
             color="text-indigo-500"
+            onClick={() => navigate("/course")}
           />
 
           {/* Total Books */}
@@ -145,6 +152,7 @@ const OverviewPage = () => {
             name="Total Books"
             value={stats.totalBooks}
             color="text-indigo-500"
+            onClick={() => navigate("/books")}
           />
         </div>
 

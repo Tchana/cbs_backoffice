@@ -1,10 +1,19 @@
 import { motion } from "framer-motion";
 
-const StatCard = ({ name, icon: Icon, value, color }) => {
+const StatCard = ({ name, icon: Icon, value, color, onClick }) => {
   return (
     <motion.div
-      className="bg-primary-500 bg-opacity-50 backdrop-blur-md overflow-hidden shadow-lg rounded-xl border border-primary-600"
+      className={`bg-primary-500 bg-opacity-50 backdrop-blur-md overflow-hidden shadow-lg rounded-xl border border-primary-600 ${
+        onClick ? "cursor-pointer" : ""
+      }`}
       whileHover={{ y: -5, boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)" }}
+      onClick={onClick}
+      role={onClick ? "button" : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      onKeyDown={(e) => {
+        if (!onClick) return;
+        if (e.key === "Enter" || e.key === " ") onClick();
+      }}
     >
       <div className="px-4 py-5 sm:p-6">
         <span className="flex items-center text-sm font-medium text-primary-50">

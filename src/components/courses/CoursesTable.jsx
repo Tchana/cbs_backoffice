@@ -7,6 +7,7 @@ import {
   CreateCourse,
   deleteCourse,
   editCourse,
+  setCourseActive,
 } from "../../services/CourseManagement";
 import CourseRegistrationModal from "./CourseRegistrationModal";
 import CourseViewModal from "./CourseViewModal";
@@ -297,6 +298,24 @@ const CoursesTable = ({ updateCourseStats }) => {
     }
   };
 
+  const handleToggleCourseActive = async (course) => {
+    try {
+      const updatedCourses = await runWithLoader(async () => {
+        await setCourseActive(course.id, !course.active);
+        return GetCourses();
+      });
+      setCourseList(updatedCourses ?? []);
+      setFilteredCourses(updatedCourses ?? []);
+      updateCourseStats(updatedCourses ?? []);
+      if (viewingCourse?.id === course.id) {
+        const updated = (updatedCourses ?? []).find((c) => c.id === course.id);
+        if (updated) setViewingCourse(updated);
+      }
+    } catch (error) {
+      console.error("Error toggling course active:", error);
+    }
+  };
+
   return (
     <>
       {!popUpState && (
@@ -373,6 +392,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                   {[
                     "Title",
                     "Level",
+                    "Status",
                     "Teacher's Name",
                     "N° of Lessons",
                     "Actions",
@@ -396,7 +416,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                     transition={{ duration: 0.3 }}
                     ref={editingCourseId === course.id ? editRowRef : null}
                   >
-                    {["title", "level", "teacher"].filter(field => field !== "description").map(
+                    {["title", "level", "active", "teacher"].map(
                       (field) => (
                         <td key={field} className="px-6 py-4 whitespace-nowrap">
                           {editingCourseId === course.id ? (
@@ -429,6 +449,16 @@ const CoursesTable = ({ updateCourseStats }) => {
                                   </option>
                                 ))}
                               </select>
+                            ) : field === "active" ? (
+                              <span
+                                className={`text-xs px-2 py-1 rounded-full ${
+                                  course.active
+                                    ? "bg-green-900 text-green-300"
+                                    : "bg-gray-700 text-gray-300"
+                                }`}
+                              >
+                                {course.active ? "Active" : "Inactive"}
+                              </span>
                             ) : (
                               <input
                                 type="text"
@@ -443,6 +473,16 @@ const CoursesTable = ({ updateCourseStats }) => {
                                 ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim() || "—"
                                 : "—"}
                             </div>
+                          ) : field === "active" ? (
+                            <span
+                              className={`text-xs px-2 py-1 rounded-full ${
+                                course.active
+                                  ? "bg-green-900 text-green-300"
+                                  : "bg-gray-700 text-gray-300"
+                              }`}
+                            >
+                              {course.active ? "Active" : "Inactive"}
+                            </span>
                           ) : (
                             <div className="text-sm font-medium text-gray-100">
                               {course[field]}
@@ -497,6 +537,18 @@ const CoursesTable = ({ updateCourseStats }) => {
                                 aria-label="Delete course"
                               >
                                 <Trash2 size={18} />
+                              </button>
+                              <button
+                                onClick={() => handleToggleCourseActive(course)}
+                                className="ml-2 text-yellow-400 hover:text-yellow-300 text-xs"
+                                aria-label="Toggle course active status"
+                                title={
+                                  course.active
+                                    ? "Set inactive (hide from students)"
+                                    : "Set active (show to students)"
+                                }
+                              >
+                                {course.active ? "Deactivate" : "Activate"}
                               </button>
                             </>
                           )}
