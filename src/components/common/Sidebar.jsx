@@ -16,6 +16,8 @@ import {
   Bell
   ,
   MessageSquare
+  ,
+  Wallet
 } from "lucide-react";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -35,6 +37,7 @@ if (isAdmin()) {
     { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
     { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
+    { name: "Finance", icon: Wallet, color: "#22C55E", href: "/finance" },
     {
       name: "Account Info",
       icon: UserCircle,
@@ -52,6 +55,7 @@ if (isAdmin()) {
     { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
     { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
     { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
+    { name: "Finance", icon: Wallet, color: "#22C55E", href: "/finance" },
     {
       name: "Account Info",
       icon: UserCircle,

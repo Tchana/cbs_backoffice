@@ -78,7 +78,8 @@ const CourseRegistrationModal = ({
       editValues.teacherLastName,
       editValues.title,
       editValues.description,
-      editValues.level
+      editValues.level,
+      editValues.priceAmount
     );
   };
 
@@ -201,6 +202,19 @@ const CourseRegistrationModal = ({
       case 2:
         return (
           <div className="space-y-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Course Price (FCFA)
+              </label>
+              <input
+                type="number"
+                min="0"
+                placeholder="e.g. 6000"
+                className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400"
+                onChange={(e) => handleInputChange(e, "priceAmount")}
+                required
+              />
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
                 Course Description

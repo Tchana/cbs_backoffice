@@ -6,7 +6,8 @@ export const CreateCourse = async (
   teacherLastName,
   title,
   description,
-  level
+  level,
+  priceAmount = 0
 ) => {
   const { data: teachersData, error: teacherError } = await supabase
     .from("profiles")
@@ -42,11 +43,12 @@ export const CreateCourse = async (
       title,
       description,
       level: level || null,
+      price_amount: Number.isFinite(Number(priceAmount)) ? Number(priceAmount) : 0,
       teacher_id: teacher.id,
       course_cover_url: courseCoverUrl,
       active: true,
     })
-    .select("id, title, description, level, teacher_id, course_cover_url, active, created_at")
+    .select("id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at")
     .single();
 
   if (error) throw new Error(error.message);
@@ -88,7 +90,7 @@ export const CreateCourse = async (
 export const GetCourses = async () => {
   const { data: coursesData, error: coursesError } = await supabase
     .from("courses")
-    .select("id, title, description, level, teacher_id, course_cover_url, active, created_at")
+    .select("id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at")
     .order("created_at", { ascending: false });
 
   if (coursesError) throw new Error(coursesError.message);
@@ -127,6 +129,8 @@ export const GetCourses = async () => {
       title: row.title,
       description: row.description || "",
       level: row.level || "",
+      price_amount: row.price_amount ?? 0,
+      currency: row.currency ?? "XAF",
       teacher_id: row.teacher_id,
       teacher: teacher
         ? {
@@ -150,7 +154,8 @@ export const editCourse = async (
   description,
   level,
   teacherFirstName,
-  teacherLastName
+  teacherLastName,
+  priceAmount
 ) => {
   const { data: teachersData, error: teacherError } = await supabase
     .from("profiles")
@@ -171,6 +176,9 @@ export const editCourse = async (
       title,
       description,
       level: level || null,
+      ...(priceAmount !== undefined && priceAmount !== null
+        ? { price_amount: Number(priceAmount) || 0 }
+        : {}),
       teacher_id: teacher.id,
       updated_at: new Date().toISOString(),
     })
