@@ -18,7 +18,8 @@ export const AddBook = async (
   category,
   bookCover,
   description,
-  language
+  language,
+  accessTier = "public"
 ) => {
   let bookCoverUrl = null;
   let bookFileUrl = null;
@@ -61,6 +62,7 @@ export const AddBook = async (
       book_file_url: bookFileUrl,
       description: description || null,
       language: language || null,
+      access_tier: accessTier || "public",
     })
     .select()
     .single();
@@ -72,7 +74,7 @@ export const AddBook = async (
 export const GetBooks = async () => {
   const { data, error } = await supabase
     .from("books")
-    .select("id, title, author, category, book_cover_url, book_file_url, description, language, created_at")
+    .select("id, title, author, category, book_cover_url, book_file_url, description, language, access_tier, created_at")
     .order("created_at", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -87,6 +89,7 @@ export const GetBooks = async () => {
     book: row.book_file_url,
     description: row.description || "",
     language: row.language || "",
+    accessTier: row.access_tier || "public",
   }));
 };
 
@@ -98,7 +101,8 @@ export const EditBook = async (
   bookCover,
   book,
   description,
-  language
+  language,
+  accessTier
 ) => {
   const updates = {};
   if (title != null) updates.title = title;
@@ -106,6 +110,7 @@ export const EditBook = async (
   if (category != null) updates.category = category;
   if (description != null) updates.description = description;
   if (language != null) updates.language = language;
+  if (accessTier != null) updates.access_tier = accessTier;
 
   if (bookCover && bookCover instanceof File) {
     const ext = bookCover.name.split(".").pop();
@@ -153,6 +158,7 @@ export const EditBook = async (
     book: data.book_file_url,
     description: data.description || "",
     language: data.language || "",
+    accessTier: data.access_tier || "public",
   };
 };
 

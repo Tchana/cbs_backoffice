@@ -5,6 +5,7 @@ import { GetCourses } from "../services/CourseManagement";
 import {
   CreateAnnouncement,
   DeleteAnnouncement,
+  GetAnnouncementActor,
   GetAnnouncements,
   UpdateAnnouncement,
 } from "../services/AnnouncementManagement";
@@ -17,14 +18,20 @@ const AnnouncementsPage = () => {
   const [body, setBody] = useState("");
   const [courseId, setCourseId] = useState("");
   const [published, setPublished] = useState(true);
+  const [visibleForDays, setVisibleForDays] = useState(7);
   const [saving, setSaving] = useState(false);
+  const [actor, setActor] = useState({ id: "", role: "" });
+
+  const canDeleteAnnouncement = (announcement) =>
+    actor.role === "admin" || announcement.created_by === actor.id;
 
   const loadAll = async () => {
-    const [courseRows, announcementRows] = await runWithLoader(() =>
-      Promise.all([GetCourses(), GetAnnouncements()])
+    const [courseRows, announcementRows, currentActor] = await runWithLoader(() =>
+      Promise.all([GetCourses(), GetAnnouncements(), GetAnnouncementActor()])
     );
     setCourses(courseRows || []);
     setItems(announcementRows || []);
+    setActor(currentActor || { id: "", role: "" });
   };
 
   useEffect(() => {
@@ -48,12 +55,14 @@ const AnnouncementsPage = () => {
           body,
           courseId: courseId || null,
           published,
+          visibleForDays,
         })
       );
       setTitle("");
       setBody("");
       setCourseId("");
       setPublished(true);
+      setVisibleForDays(7);
       await loadAll();
     } catch (err) {
       console.error("Create announcement failed", err);
@@ -74,6 +83,10 @@ const AnnouncementsPage = () => {
   };
 
   const deleteItem = async (a) => {
+    if (!canDeleteAnnouncement(a)) {
+      window.alert("Teachers can only delete their own announcements.");
+      return;
+    }
     const ok = window.confirm("Delete this announcement?");
     if (!ok) return;
     try {
@@ -81,6 +94,17 @@ const AnnouncementsPage = () => {
       await loadAll();
     } catch (e) {
       console.error("Delete announcement failed", e);
+    }
+  };
+
+  const updateVisibleWindow = async (announcement, days) => {
+    try {
+      await runWithLoader(() =>
+        UpdateAnnouncement(announcement.id, { visibleForDays: Number(days) })
+      );
+      await loadAll();
+    } catch (e) {
+      console.error("Update visibility window failed", e);
     }
   };
 
@@ -128,6 +152,17 @@ const AnnouncementsPage = () => {
                 />
                 Published
               </label>
+              <select
+                value={visibleForDays}
+                onChange={(e) => setVisibleForDays(Number(e.target.value))}
+                className="px-3 py-2 bg-gray-700 text-white rounded-md"
+              >
+                <option value={1}>Visible for 1 day</option>
+                <option value={3}>Visible for 3 days</option>
+                <option value={7}>Visible for 1 week</option>
+                <option value={14}>Visible for 2 weeks</option>
+                <option value={30}>Visible for 1 month</option>
+              </select>
               <button
                 type="submit"
                 disabled={!canSubmit || saving}
@@ -157,22 +192,45 @@ const AnnouncementsPage = () => {
                     </p>
                     <p className="text-gray-400 text-xs mt-2">
                       {a.course?.title ? `Course: ${a.course.title}` : "Global"} ·{" "}
-                      {new Date(a.created_at).toLocaleString()}
+                      {new Date(a.created_at).toLocaleString()} · Visible:{" "}
+                      {a.visible_for_days || 7} day(s) · Expires:{" "}
+                      {a.visible_until ? new Date(a.visible_until).toLocaleString() : "-"}
                     </p>
                   </div>
                   <div className="flex flex-col gap-2">
+                    <select
+                      value={a.visible_for_days || 7}
+                      onChange={(e) => updateVisibleWindow(a, e.target.value)}
+                      className="px-3 py-1 text-xs bg-gray-600 text-white rounded-md"
+                    >
+                      <option value={1}>1 day</option>
+                      <option value={3}>3 days</option>
+                      <option value={7}>1 week</option>
+                      <option value={14}>2 weeks</option>
+                      <option value={30}>1 month</option>
+                    </select>
                     <button
                       onClick={() => togglePublished(a)}
                       className="px-3 py-1 text-xs bg-yellow-600 text-white rounded-md hover:bg-yellow-500"
                     >
                       {a.published ? "Unpublish" : "Publish"}
                     </button>
-                    <button
-                      onClick={() => deleteItem(a)}
-                      className="px-3 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-500"
-                    >
-                      Delete
-                    </button>
+                    {canDeleteAnnouncement(a) ? (
+                      <button
+                        onClick={() => deleteItem(a)}
+                        className="px-3 py-1 text-xs bg-red-600 text-white rounded-md hover:bg-red-500"
+                      >
+                        Delete
+                      </button>
+                    ) : (
+                      <button
+                        disabled
+                        title="Only admins or the creator can delete this announcement"
+                        className="px-3 py-1 text-xs bg-red-900/50 text-gray-300 rounded-md cursor-not-allowed"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

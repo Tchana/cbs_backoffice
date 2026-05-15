@@ -83,10 +83,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const validRoles = ["admin", "teacher", "student"];
+    const validRoles = ["admin", "teacher", "student", "library_user"];
     if (!validRoles.includes(role)) {
       return new Response(
-        JSON.stringify({ error: "Invalid role. Must be admin, teacher, or student." }),
+        JSON.stringify({ error: "Invalid role. Must be admin, teacher, student, or library_user." }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }

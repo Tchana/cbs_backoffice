@@ -8,7 +8,7 @@ import UserRegistrationModal from "./UserRegistrationModal";
 import UserViewModal from "./UserViewModal";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
-const UsersTable = ({ updateUserStats }) => {
+const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
   const runWithLoader = useApiLoader().runWithLoader;
   const [usersList, setUsersList] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -25,19 +25,28 @@ const UsersTable = ({ updateUserStats }) => {
   const usersPerPage = 10;
   const [viewingUser, setViewingUser] = useState(null);
 
+  const matchesActiveTab = (user) => {
+    if (activeTab === "admin") return user.role === "admin";
+    if (activeTab === "student") return user.role === "student";
+    if (activeTab === "library_user") return user.role === "library_user";
+    return user.role === "student" || user.role === "library_user";
+  };
+
   // Refresh data function
   const refreshData = async () => {
     const users = await runWithLoader(() => GetUsers());
-    const adminUsers = users.filter((user) => user.role === "admin");
-    setUsersList(adminUsers);
-    setFilteredUsers(adminUsers);
-    updateUserStats(adminUsers);
+    const tabUsers = users.filter(matchesActiveTab);
+    setUsersList(tabUsers);
+    setFilteredUsers(tabUsers);
+    updateUserStats(tabUsers);
   };
 
   const fetchUsers = async () => {
     const users = await runWithLoader(() => GetUsers());
-    setUsersList(users.filter((user) => user.role === "admin"));
-    setFilteredUsers(users.filter((user) => user.role === "admin"));
+    const tabUsers = users.filter(matchesActiveTab);
+    setUsersList(tabUsers);
+    setFilteredUsers(tabUsers);
+    updateUserStats(tabUsers);
   };
 
   // ** Search Functionality **
@@ -60,12 +69,26 @@ const UsersTable = ({ updateUserStats }) => {
 
   // Start registering
   const handleRegistrationClick = () => {
+    const defaultRole = activeTab === "admin"
+      ? "admin"
+      : activeTab === "library_user"
+      ? "library_user"
+      : "student";
+    const defaultSubscription =
+      defaultRole === "library_user"
+        ? "library_user"
+        : defaultRole === "student"
+        ? "student"
+        : "none";
     setRegistrationUserId(true);
     setEditValues({
       firstName: "",
       lastName: "",
       email: "",
       password: "",
+      role: defaultRole,
+      subscriptionType: defaultSubscription,
+      schoolMaxLevel: defaultRole === "student" ? 1 : 0,
     });
   };
 
@@ -81,22 +104,43 @@ const UsersTable = ({ updateUserStats }) => {
   // Confirm Registration
   const handleConfirmRegistration = async () => {
     try {
-      await runWithLoader(() =>
+      const created = await runWithLoader(() =>
         createUserAsAdmin(
           editValues.email,
           editValues.password,
           editValues.firstName,
           editValues.lastName,
-          "admin",
+          editValues.role ||
+            (activeTab === "admin"
+              ? "admin"
+              : activeTab === "library_user"
+              ? "library_user"
+              : "student"),
           editValues.p_image || null
         )
       );
 
+      if (created?.id) {
+        await runWithLoader(() =>
+          editUser(
+            created.id,
+            undefined,
+            undefined,
+            undefined,
+            editValues.role,
+            undefined,
+            undefined,
+            editValues.subscriptionType,
+            editValues.schoolMaxLevel
+          )
+        );
+      }
+
       const updatedUsers = await runWithLoader(() => GetUsers());
-      const adminUsers = updatedUsers.filter((user) => user.role === "admin");
-      setUsersList(adminUsers); // Update the main users list
-      setFilteredUsers(adminUsers);
-      updateUserStats(adminUsers);
+      const tabUsers = updatedUsers.filter(matchesActiveTab);
+      setUsersList(tabUsers); // Update the main users list
+      setFilteredUsers(tabUsers);
+      updateUserStats(tabUsers);
       setRegistrationUserId(false);
     } catch (error) {
       console.error("Error registering user:", error);
@@ -113,6 +157,8 @@ const UsersTable = ({ updateUserStats }) => {
       email: user.email,
       pImage: user.pImage || null,
       role: user.role,
+      subscriptionType: user.subscriptionType || "none",
+      schoolMaxLevel: user.schoolMaxLevel ?? 0,
     });
   };
 
@@ -121,7 +167,56 @@ const UsersTable = ({ updateUserStats }) => {
     if (field === "pImage") {
       setEditValues({ ...editValues, [field]: e.target.files[0] });
     } else {
-      setEditValues({ ...editValues, [field]: e.target.value });
+      const value = e.target.value;
+      if (field === "role") {
+        let nextSubscription = editValues.subscriptionType || "none";
+        let nextSchoolMaxLevel = Number(editValues.schoolMaxLevel ?? 0);
+        if (value === "student") {
+          nextSubscription = "student";
+          if (!Number.isFinite(nextSchoolMaxLevel) || nextSchoolMaxLevel < 1) {
+            nextSchoolMaxLevel = 1;
+          }
+        } else if (value === "library_user") {
+          nextSubscription = "library_user";
+          nextSchoolMaxLevel = 0;
+        } else {
+          nextSubscription = "none";
+          nextSchoolMaxLevel = 0;
+        }
+        setEditValues({
+          ...editValues,
+          role: value,
+          subscriptionType: nextSubscription,
+          schoolMaxLevel: nextSchoolMaxLevel,
+        });
+        return;
+      }
+      if (field === "subscriptionType") {
+        let nextRole = editValues.role || "student";
+        let nextSchoolMaxLevel = Number(editValues.schoolMaxLevel ?? 0);
+        if (value === "student") {
+          nextRole = "student";
+          if (!Number.isFinite(nextSchoolMaxLevel) || nextSchoolMaxLevel < 1) {
+            nextSchoolMaxLevel = 1;
+          }
+        } else if (value === "library_user") {
+          nextRole = "library_user";
+          nextSchoolMaxLevel = 0;
+        } else if (value === "none") {
+          if (nextRole === "student" || nextRole === "library_user") {
+            nextRole = "teacher";
+          }
+          nextSchoolMaxLevel = 0;
+        }
+        setEditValues({
+          ...editValues,
+          subscriptionType: value,
+          role: nextRole,
+          schoolMaxLevel: nextSchoolMaxLevel,
+        });
+        return;
+      }
+      setEditValues({ ...editValues, [field]: value });
     }
   };
 
@@ -137,16 +232,18 @@ const UsersTable = ({ updateUserStats }) => {
           editValues.email,
           editValues.firstName,
           editValues.lastName,
-          "admin",
+          editValues.role || "admin",
           undefined,
-          editValues.p_image || null
+          editValues.p_image || null,
+          editValues.subscriptionType,
+          editValues.schoolMaxLevel
         );
         return GetUsers();
       });
-      const adminUsers = (updatedUsers ?? []).filter((user) => user.role === "admin");
-      setUsersList(adminUsers);
-      setFilteredUsers(adminUsers);
-      updateUserStats(adminUsers);
+      const tabUsers = (updatedUsers ?? []).filter(matchesActiveTab);
+      setUsersList(tabUsers);
+      setFilteredUsers(tabUsers);
+      updateUserStats(tabUsers);
       handleCloseModal();
     } catch (error) {
       console.error("Error editing user:", error);
@@ -168,9 +265,9 @@ const UsersTable = ({ updateUserStats }) => {
         await deleteUser(userId);
         return GetUsers();
       });
-      const adminUsers = (updatedUsers ?? []).filter((user) => user.role === "admin");
-      setUsersList(adminUsers);
-      const filtered = adminUsers.filter(
+      const tabUsers = (updatedUsers ?? []).filter(matchesActiveTab);
+      setUsersList(tabUsers);
+      const filtered = tabUsers.filter(
         (user) =>
           user.firstName.toLowerCase().includes(searchTerm) ||
           user.lastName.toLowerCase().includes(searchTerm) ||
@@ -178,7 +275,7 @@ const UsersTable = ({ updateUserStats }) => {
           user.role.toLowerCase().includes(searchTerm)
       );
       setFilteredUsers(filtered);
-      updateUserStats(adminUsers);
+      updateUserStats(tabUsers);
     } catch (error) {
       console.error("Error deleting user:", error);
     }
@@ -241,7 +338,7 @@ const UsersTable = ({ updateUserStats }) => {
 
   useEffect(() => {
     fetchUsers();
-  }, []); // Remove searchTerm dependency as it's handled in handleSearch
+  }, [activeTab]); // Reload when tab changes
 
   return (
     <motion.div

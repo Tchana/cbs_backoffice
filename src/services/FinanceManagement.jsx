@@ -115,3 +115,22 @@ export const UpsertReceiptMetadata = async ({
   return data;
 };
 
+export const GetSubscriptionOverview = async () => {
+  const { data, error } = await supabase
+    .from("v_user_subscription_status")
+    .select("*")
+    .order("ends_at", { ascending: true });
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+
+export const GetSubscriptionTransactions = async () => {
+  const { data, error } = await supabase
+    .from("payment_transactions")
+    .select("id,user_id,amount,currency,provider,provider_tx_ref,provider_status,created_at,processed_at,checkout_payload,plan:subscription_plans(code,name,target_role),profile:profiles(first_name,last_name,email)")
+    .order("created_at", { ascending: false })
+    .limit(100);
+  if (error) throw new Error(error.message);
+  return data || [];
+};
+

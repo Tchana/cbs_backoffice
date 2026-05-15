@@ -1,30 +1,24 @@
 import { useState, useEffect } from "react";
-import { Navigate } from "react-router-dom";
-import { UsersIcon } from "lucide-react";
-import { motion } from "framer-motion";
 import Header from "../components/common/Header";
-import StatCard from "../components/common/StatCard";
 import UsersTable from "../components/users/UserTable";
 import { GetUsers } from "../services/UsersManagement";
-import { isAdmin } from "../lib/auth";
 import { useApiLoader } from "../contexts/ApiLoaderContext";
 
 const UsersPage = () => {
   const runWithLoader = useApiLoader().runWithLoader;
+  const [activeTab, setActiveTab] = useState("both");
   const [userStats, setUserStats] = useState({
     totalUsers: 0,
-    teachers: 0,
     students: 0,
-    admins: 0,
+    libraryUsers: 0,
   });
 
   // Function to update stats whenever users change
   const updateUserStats = (users) => {
     setUserStats({
       totalUsers: users.length,
-      teachers: users.filter((user) => user.role === "teacher").length,
       students: users.filter((user) => user.role === "student").length,
-      admins: users.filter((user) => user.role === "admin").length,
+      libraryUsers: users.filter((user) => user.role === "library_user").length,
     });
   };
 
@@ -37,17 +31,39 @@ const UsersPage = () => {
     fetchUsers();
   }, []);
 
-  if (!isAdmin()) return <Navigate to="/course" replace />;
+  const TABS = [
+    { key: "both", label: "Both" },
+    { key: "student", label: "Students" },
+    { key: "library_user", label: "Library Users" },
+  ];
 
   return (
     <div className="flex-1 overflow-auto relative z-10">
-      <Header title="Admin" />
+      <Header title="Users" />
 
       <main className="max-w-7xl mx-auto py-6 px-4 lg:px-8">
-        <UsersTable updateUserStats={updateUserStats} />
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          {TABS.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                activeTab === tab.key
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-700 text-gray-200 hover:bg-gray-600"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-        {/* USER CHARTS */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8"></div>
+        <div className="mb-4 text-sm text-gray-300">
+          Showing {userStats.totalUsers} users ({userStats.students} students,{" "}
+          {userStats.libraryUsers} library users)
+        </div>
+
+        <UsersTable updateUserStats={updateUserStats} activeTab={activeTab} />
       </main>
     </div>
   );

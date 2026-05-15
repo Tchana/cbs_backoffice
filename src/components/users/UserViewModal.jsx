@@ -1,9 +1,20 @@
 import { motion, AnimatePresence } from "framer-motion";
 import { X } from "lucide-react";
 import { createPortal } from "react-dom";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import {
+  CreateManualSubscription,
+  GetUserSubscriptionHistory,
+  GetUserSubscriptionStatus,
+} from "../../services/UsersManagement";
+import { useApiLoader } from "../../contexts/ApiLoaderContext";
 
 const UserViewModal = ({ user, onClose }) => {
+  const runWithLoader = useApiLoader().runWithLoader;
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  const [history, setHistory] = useState([]);
+  const [manualPlanCode, setManualPlanCode] = useState("student_trimester");
+  const [manualReason, setManualReason] = useState("");
   if (!user) return null;
   const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
 
@@ -14,6 +25,35 @@ const UserViewModal = ({ user, onClose }) => {
       document.body.style.overflow = "unset";
     };
   }, []);
+
+  useEffect(() => {
+    const load = async () => {
+      const [status, rows] = await Promise.all([
+        runWithLoader(() => GetUserSubscriptionStatus(user.id)),
+        runWithLoader(() => GetUserSubscriptionHistory(user.id)),
+      ]);
+      setSubscriptionStatus(status);
+      setHistory(rows || []);
+    };
+    load().catch(() => {});
+  }, [user.id]);
+
+  const handleManualGrant = async () => {
+    await runWithLoader(() =>
+      CreateManualSubscription({
+        userId: user.id,
+        planCode: manualPlanCode,
+        reason: manualReason,
+      })
+    );
+    const [status, rows] = await Promise.all([
+      runWithLoader(() => GetUserSubscriptionStatus(user.id)),
+      runWithLoader(() => GetUserSubscriptionHistory(user.id)),
+    ]);
+    setSubscriptionStatus(status);
+    setHistory(rows || []);
+    setManualReason("");
+  };
 
   return createPortal(
     <AnimatePresence>
@@ -85,6 +125,18 @@ const UserViewModal = ({ user, onClose }) => {
                 <p className="text-white font-medium capitalize">{user.role}</p>
               </div>
               <div>
+                <label className="text-gray-400 text-sm">Subscription</label>
+                <p className="text-white font-medium">
+                  {user.subscriptionType || "none"}
+                </p>
+              </div>
+              <div>
+                <label className="text-gray-400 text-sm">School Max Level</label>
+                <p className="text-white font-medium">
+                  {user.schoolMaxLevel ?? 0}
+                </p>
+              </div>
+              <div>
                 <label className="text-gray-400 text-sm">Status</label>
                 <p className="text-green-400 font-medium">Active</p>
               </div>
@@ -117,6 +169,61 @@ const UserViewModal = ({ user, onClose }) => {
                     </p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-gray-700">
+              <h3 className="text-lg font-medium text-white mb-3">Subscription</h3>
+              <div className="space-y-2 text-sm">
+                <p className="text-gray-300">
+                  Status: <span className="text-white">{subscriptionStatus?.subscription_status || "none"}</span>
+                </p>
+                <p className="text-gray-300">
+                  Plan: <span className="text-white">{subscriptionStatus?.plan_name || "-"}</span>
+                </p>
+                <p className="text-gray-300">
+                  Ends:{" "}
+                  <span className="text-white">
+                    {subscriptionStatus?.ends_at
+                      ? new Date(subscriptionStatus.ends_at).toLocaleString()
+                      : "-"}
+                  </span>
+                </p>
+              </div>
+              <div className="mt-3 grid grid-cols-1 gap-2">
+                <select
+                  value={manualPlanCode}
+                  onChange={(e) => setManualPlanCode(e.target.value)}
+                  className="bg-gray-700 text-white rounded-md px-3 py-2"
+                >
+                  <option value="student_trimester">Student trimester</option>
+                  <option value="library_trimester">Library trimester</option>
+                </select>
+                <input
+                  value={manualReason}
+                  onChange={(e) => setManualReason(e.target.value)}
+                  placeholder="Manual reason (optional)"
+                  className="bg-gray-700 text-white rounded-md px-3 py-2"
+                />
+                <button
+                  onClick={handleManualGrant}
+                  className="px-3 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white"
+                >
+                  Grant / Extend Trimester
+                </button>
+              </div>
+              <div className="mt-3 max-h-40 overflow-auto space-y-2">
+                {history.map((row) => (
+                  <div key={row.id} className="bg-gray-700 rounded-md p-2">
+                    <p className="text-white text-xs">
+                      {row.plan?.name || row.plan?.code || "Plan"} · {row.status}
+                    </p>
+                    <p className="text-gray-300 text-xs">
+                      {row.starts_at ? new Date(row.starts_at).toLocaleDateString() : "-"} -{" "}
+                      {row.ends_at ? new Date(row.ends_at).toLocaleDateString() : "-"}
+                    </p>
+                  </div>
+                ))}
               </div>
             </div>
           </div>

@@ -4,7 +4,7 @@ export const GetAnnouncements = async () => {
   const { data, error } = await supabase
     .from("announcements")
     .select(
-      "id,title,body,published,course_id,created_by,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
+      "id,title,body,published,course_id,created_by,visible_for_days,visible_until,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
     )
     .order("created_at", { ascending: false });
 
@@ -12,11 +12,34 @@ export const GetAnnouncements = async () => {
   return data || [];
 };
 
+export const GetAnnouncementActor = async () => {
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError) throw new Error(authError.message);
+  if (!user?.id) throw new Error("Not authenticated");
+
+  const { data: profile, error: profileError } = await supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (profileError) throw new Error(profileError.message);
+
+  return {
+    id: user.id,
+    role: profile?.role || "",
+  };
+};
+
 export const CreateAnnouncement = async ({
   title,
   body,
   courseId = null,
   published = true,
+  visibleForDays = 7,
 }) => {
   const {
     data: { user },
@@ -32,10 +55,11 @@ export const CreateAnnouncement = async ({
       body: body.trim(),
       course_id: courseId || null,
       published,
+      visible_for_days: visibleForDays,
       created_by: user.id,
     })
     .select(
-      "id,title,body,published,course_id,created_by,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
+      "id,title,body,published,course_id,created_by,visible_for_days,visible_until,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
     )
     .single();
 
@@ -49,6 +73,9 @@ export const UpdateAnnouncement = async (id, patch) => {
     ...(patch.body !== undefined ? { body: patch.body } : {}),
     ...(patch.published !== undefined ? { published: patch.published } : {}),
     ...(patch.courseId !== undefined ? { course_id: patch.courseId } : {}),
+    ...(patch.visibleForDays !== undefined
+      ? { visible_for_days: patch.visibleForDays }
+      : {}),
     updated_at: new Date().toISOString(),
   };
 
@@ -57,7 +84,7 @@ export const UpdateAnnouncement = async (id, patch) => {
     .update(payload)
     .eq("id", id)
     .select(
-      "id,title,body,published,course_id,created_by,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
+      "id,title,body,published,course_id,created_by,visible_for_days,visible_until,created_at,updated_at,course:courses(id,title),creator:profiles(id,first_name,last_name)"
     )
     .single();
 

@@ -6,3 +6,55 @@
 body {
     @apply font-sans;
 }
+
+:root {
+    --scrollbar-track: rgba(17, 24, 39, 0.96);
+    --scrollbar-thumb: rgba(31, 41, 55, 0.72);
+    --scrollbar-thumb-hover: rgba(55, 65, 81, 0.82);
+}
+
+/* Firefox */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Chromium / WebKit */
+*::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+    border-radius: 9999px;
+    border: 1px solid var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+}
+
+/* Sidebar scrollbar: hidden until user scrolls */
+.scrollbar-auto-hide {
+    scrollbar-width: none;
+}
+
+.scrollbar-auto-hide::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+}
+
+.scrollbar-auto-hide.scrollbar-visible {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.scrollbar-auto-hide.scrollbar-visible::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}

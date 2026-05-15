@@ -34,6 +34,7 @@ const BookList = () => {
     description: "",
     bookCover: null,
     book: null,
+    accessTier: "public",
   });
 
   useEffect(() => {
@@ -98,6 +99,7 @@ const BookList = () => {
       description: "",
       bookCover: null,
       book: null,
+      accessTier: "public",
     });
   };
 
@@ -112,6 +114,7 @@ const BookList = () => {
       description: book.description ?? "",
       bookCover: null,
       book: null,
+      accessTier: book.accessTier || "public",
     });
   };
 
@@ -126,6 +129,7 @@ const BookList = () => {
       description: "",
       bookCover: null,
       book: null,
+      accessTier: "public",
     });
   };
 
@@ -158,7 +162,8 @@ const BookList = () => {
         editValues.category,
         editValues.bookCover,
         editValues.description,
-        editValues.language
+        editValues.language,
+        editValues.accessTier
         )
       );
       await refreshData();
@@ -181,7 +186,8 @@ const BookList = () => {
         editValues.bookCover,
         editValues.book,
         editValues.description,
-        editValues.language
+        editValues.language,
+        editValues.accessTier
         )
       );
       await refreshData();
@@ -358,6 +364,7 @@ const BookList = () => {
                     <span>Author: {book.author || "-"}</span>
                     <span>Category: {book.category}</span>
                     <span>Language: {book.language}</span>
+                    <span>Access: {book.accessTier || "public"}</span>
                   </div>
                   <div className="mt-auto flex flex-col gap-2">
                     <button

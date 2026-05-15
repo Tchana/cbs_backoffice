@@ -6,7 +6,7 @@ import Sidebar from "./components/common/Sidebar";
 import OverviewPage from "./pages/OverviewPage";
 import CoursesPage from "./pages/CoursesPage";
 import UsersPage from "./pages/UserPage";
-import StudentPage from "./pages/StudentPage";
+import AdminPage from "./pages/AdminPage";
 import TeacherPage from "./pages/TeacherPage";
 import BooksPage from "./pages/BooksPage";
 import BlogsPage from "./pages/BlogsPage";
@@ -14,6 +14,7 @@ import AnnouncementsPage from "./pages/AnnouncementsPage";
 import ForumPage from "./pages/ForumPage";
 import FinancePage from "./pages/FinancePage";
 import LessonsPage from "./pages/LessonsPage";
+import SubscriptionsPage from "./pages/SubscriptionsPage";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -31,8 +32,9 @@ const AuthenticatedLayout = () => (
       
       <Routes>
         <Route path="/overview" element={<OverviewPage />} />
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/users" element={<UsersPage />} />
-        <Route path="/students" element={<StudentPage />} />
+        <Route path="/students" element={<Navigate to="/users" replace />} />
         <Route path="/teachers" element={<TeacherPage />} />
         <Route path="/course" element={<CoursesPage />} />
         <Route path="/lessons" element={<LessonsPage />} />
@@ -41,6 +43,7 @@ const AuthenticatedLayout = () => (
         <Route path="/announcements" element={<AnnouncementsPage />} />
         <Route path="/forum" element={<ForumPage />} />
         <Route path="/finance" element={<FinancePage />} />
+        <Route path="/subscriptions" element={<SubscriptionsPage />} />
         <Route path="/account-info" element={<AccountInfoPage />} />
       </Routes>
     </div>
