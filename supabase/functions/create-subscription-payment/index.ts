@@ -130,6 +130,22 @@ Deno.serve(async (req) => {
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
+    const { data: paymentsEnabled, error: paymentsFlagError } = await adminClient.rpc(
+      "subscription_payments_enabled",
+    );
+    if (paymentsFlagError) {
+      return json({ error: paymentsFlagError.message }, 400);
+    }
+    if (!paymentsEnabled) {
+      return json(
+        {
+          error:
+            "Subscription payments are disabled. Please contact an administrator for access.",
+        },
+        403,
+      );
+    }
+
     const { data: plan, error: planError } = await adminClient
       .from("subscription_plans")
       .select("id,code,name,target_role,duration_months,price_amount,currency,active")

@@ -6,8 +6,39 @@ import {
   CreateManualSubscription,
   GetUserSubscriptionHistory,
   GetUserSubscriptionStatus,
+  SetUserSubscriptionAccessState,
 } from "../../services/UsersManagement";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
+
+const accessBadgeClass = (state) => {
+  const s = (state || "none").toLowerCase();
+  if (s === "full") return "bg-emerald-900/50 text-emerald-300 border-emerald-800";
+  if (s === "suspended") return "bg-red-900/50 text-red-300 border-red-800";
+  if (s === "downgraded") return "bg-amber-900/50 text-amber-300 border-amber-800";
+  return "bg-gray-800 text-gray-400 border-gray-700";
+};
+
+const DetailField = ({ label, value, className = "" }) => (
+  <div className={className}>
+    <p className="text-xs font-medium uppercase tracking-wide text-gray-500">{label}</p>
+    <p className="mt-1 text-sm font-medium text-gray-100 break-words">{value ?? "—"}</p>
+  </div>
+);
+
+const SectionCard = ({ title, description, children }) => (
+  <section className="rounded-xl border border-gray-700/80 bg-gray-900/40 p-5">
+    <div className="mb-4">
+      <h3 className="text-base font-semibold text-gray-100">{title}</h3>
+      {description ? (
+        <p className="mt-1 text-sm text-gray-400">{description}</p>
+      ) : null}
+    </div>
+    {children}
+  </section>
+);
+
+const inputClass =
+  "w-full rounded-lg border border-gray-600 bg-gray-800 px-3 py-2.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
 
 const UserViewModal = ({ user, onClose }) => {
   const runWithLoader = useApiLoader().runWithLoader;
@@ -16,9 +47,10 @@ const UserViewModal = ({ user, onClose }) => {
   const [manualPlanCode, setManualPlanCode] = useState("student_trimester");
   const [manualReason, setManualReason] = useState("");
   if (!user) return null;
-  const initials = `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
+  const initials =
+    `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase() || "U";
+  const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User";
 
-  // Prevent body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => {
@@ -38,6 +70,15 @@ const UserViewModal = ({ user, onClose }) => {
     load().catch(() => {});
   }, [user.id]);
 
+  const reloadSubscription = async () => {
+    const [status, rows] = await Promise.all([
+      runWithLoader(() => GetUserSubscriptionStatus(user.id)),
+      runWithLoader(() => GetUserSubscriptionHistory(user.id)),
+    ]);
+    setSubscriptionStatus(status);
+    setHistory(rows || []);
+  };
+
   const handleManualGrant = async () => {
     await runWithLoader(() =>
       CreateManualSubscription({
@@ -46,185 +87,309 @@ const UserViewModal = ({ user, onClose }) => {
         reason: manualReason,
       })
     );
-    const [status, rows] = await Promise.all([
-      runWithLoader(() => GetUserSubscriptionStatus(user.id)),
-      runWithLoader(() => GetUserSubscriptionHistory(user.id)),
-    ]);
-    setSubscriptionStatus(status);
-    setHistory(rows || []);
+    await reloadSubscription();
     setManualReason("");
   };
 
+  const handleSuspendAccess = async () => {
+    const subscriptionId = subscriptionStatus?.subscription_id;
+    if (!subscriptionId) return;
+    const note = window.prompt("Optional note for suspending access", "") ?? "";
+    await runWithLoader(() =>
+      SetUserSubscriptionAccessState({
+        subscriptionId,
+        accessState: "suspended",
+        note,
+      })
+    );
+    await reloadSubscription();
+  };
+
+  const handleRestoreAccess = async () => {
+    const subscriptionId = subscriptionStatus?.subscription_id;
+    if (!subscriptionId) return;
+    const note = window.prompt("Optional note for restoring access", "") ?? "";
+    await runWithLoader(() =>
+      SetUserSubscriptionAccessState({
+        subscriptionId,
+        accessState: "full",
+        note,
+      })
+    );
+    await reloadSubscription();
+  };
+
+  const accessState = subscriptionStatus?.access_state || "none";
+  const isSuspended = accessState === "suspended";
+
   return createPortal(
     <AnimatePresence>
-      <div className="fixed inset-0 z-[99999] flex items-center justify-center">
-        {/* Backdrop */}
+      <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4 sm:p-6 md:p-8">
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 backdrop-blur-sm"
           onClick={onClose}
+          aria-hidden
         />
 
-        {/* Modal */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.95, y: 20 }}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="user-details-title"
+          initial={{ opacity: 0, scale: 0.97, y: 16 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.95, y: 20 }}
+          exit={{ opacity: 0, scale: 0.97, y: 16 }}
           transition={{ duration: 0.2 }}
-          className="relative bg-gray-800 rounded-lg p-6 w-full max-w-md shadow-2xl"
+          className="relative flex w-full max-w-4xl max-h-[min(90vh,880px)] flex-col overflow-hidden rounded-2xl border border-gray-700 bg-gray-800 shadow-2xl"
+          onClick={(e) => e.stopPropagation()}
         >
-          {/* Fixed Close Button */}
-          <div className="absolute -top-3 -right-3 z-10">
-            <button
-              className="text-red-500 hover:text-red-700 p-2 rounded-full bg-gray-800 hover:bg-gray-700 transition-colors duration-200 shadow-lg"
-              onClick={onClose}
-              aria-label="Close modal"
-            >
-              <X size={24} />
-            </button>
-          </div>
-
-          <h2 className="text-xl font-semibold text-white mb-6">
-            User Details
-          </h2>
-
-          <div className="space-y-6">
-            {/* Profile Image */}
-            <div className="flex justify-center">
+          {/* Header */}
+          <div className="shrink-0 border-b border-gray-700 bg-gray-800/95 px-6 py-5 sm:px-8">
+            <div className="flex items-start gap-4 sm:gap-5">
               {user.pImage ? (
                 <img
                   src={user.pImage}
-                  alt={`${user.firstName}'s profile`}
-                  className="w-24 h-24 rounded-full object-cover border-2 border-indigo-500"
+                  alt=""
+                  className="h-16 w-16 shrink-0 rounded-full border-2 border-indigo-500/80 object-cover sm:h-20 sm:w-20"
                 />
               ) : (
-                <div className="w-24 h-24 rounded-full border-2 border-indigo-500 bg-indigo-600 flex items-center justify-center text-white text-2xl font-semibold">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-2 border-indigo-500/80 bg-indigo-600 text-xl font-semibold text-white sm:h-20 sm:w-20 sm:text-2xl">
                   {initials}
                 </div>
               )}
-            </div>
-
-            {/* User Details */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-gray-400 text-sm">First Name</label>
-                <p className="text-white font-medium">{user.firstName}</p>
-              </div>
-              <div>
-                <label className="text-gray-400 text-sm">Last Name</label>
-                <p className="text-white font-medium">{user.lastName}</p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-gray-400 text-sm">Email</label>
-                <p className="text-white font-medium">{user.email}</p>
-              </div>
-              <div>
-                <label className="text-gray-400 text-sm">Role</label>
-                <p className="text-white font-medium capitalize">{user.role}</p>
-              </div>
-              <div>
-                <label className="text-gray-400 text-sm">Subscription</label>
-                <p className="text-white font-medium">
-                  {user.subscriptionType || "none"}
+              <div className="min-w-0 flex-1 pt-0.5">
+                <p className="text-xs font-medium uppercase tracking-wide text-indigo-400">
+                  User profile
                 </p>
-              </div>
-              <div>
-                <label className="text-gray-400 text-sm">School Max Level</label>
-                <p className="text-white font-medium">
-                  {user.schoolMaxLevel ?? 0}
-                </p>
-              </div>
-              <div>
-                <label className="text-gray-400 text-sm">Status</label>
-                <p className="text-green-400 font-medium">Active</p>
-              </div>
-            </div>
-
-            {/* Additional Information */}
-            <div className="pt-6 border-t border-gray-700">
-              <h3 className="text-lg font-medium text-white mb-4">Activity</h3>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">
-                  Member since: {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/A"}
-                </p>
-                {user.role === "teacher" && (
-                  <div>
-                    <label className="text-gray-400 text-sm block">
-                      Courses
-                    </label>
-                    <p className="text-white">
-                      {user.courses?.length || 0} active courses
-                    </p>
-                  </div>
-                )}
-                {user.role === "student" && (
-                  <div>
-                    <label className="text-gray-400 text-sm block">
-                      Enrolled In
-                    </label>
-                    <p className="text-white">
-                      {user.enrollments?.length || 0} courses
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="pt-6 border-t border-gray-700">
-              <h3 className="text-lg font-medium text-white mb-3">Subscription</h3>
-              <div className="space-y-2 text-sm">
-                <p className="text-gray-300">
-                  Status: <span className="text-white">{subscriptionStatus?.subscription_status || "none"}</span>
-                </p>
-                <p className="text-gray-300">
-                  Plan: <span className="text-white">{subscriptionStatus?.plan_name || "-"}</span>
-                </p>
-                <p className="text-gray-300">
-                  Ends:{" "}
-                  <span className="text-white">
-                    {subscriptionStatus?.ends_at
-                      ? new Date(subscriptionStatus.ends_at).toLocaleString()
-                      : "-"}
+                <h2
+                  id="user-details-title"
+                  className="mt-1 truncate text-xl font-semibold text-white sm:text-2xl"
+                >
+                  {fullName}
+                </h2>
+                <p className="mt-1 truncate text-sm text-gray-400">{user.email}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <span className="rounded-full border border-gray-600 bg-gray-900 px-2.5 py-0.5 text-xs font-medium capitalize text-gray-200">
+                    {user.role || "—"}
                   </span>
-                </p>
+                  <span className="rounded-full border border-gray-600 bg-gray-900 px-2.5 py-0.5 text-xs font-medium text-gray-200">
+                    {user.subscriptionType || "none"}
+                  </span>
+                  <span
+                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${accessBadgeClass(accessState)}`}
+                  >
+                    {accessState}
+                  </span>
+                </div>
               </div>
-              <div className="mt-3 grid grid-cols-1 gap-2">
-                <select
-                  value={manualPlanCode}
-                  onChange={(e) => setManualPlanCode(e.target.value)}
-                  className="bg-gray-700 text-white rounded-md px-3 py-2"
-                >
-                  <option value="student_trimester">Student trimester</option>
-                  <option value="library_trimester">Library trimester</option>
-                </select>
-                <input
-                  value={manualReason}
-                  onChange={(e) => setManualReason(e.target.value)}
-                  placeholder="Manual reason (optional)"
-                  className="bg-gray-700 text-white rounded-md px-3 py-2"
-                />
-                <button
-                  onClick={handleManualGrant}
-                  className="px-3 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 text-white"
-                >
-                  Grant / Extend Trimester
-                </button>
-              </div>
-              <div className="mt-3 max-h-40 overflow-auto space-y-2">
-                {history.map((row) => (
-                  <div key={row.id} className="bg-gray-700 rounded-md p-2">
-                    <p className="text-white text-xs">
-                      {row.plan?.name || row.plan?.code || "Plan"} · {row.status}
-                    </p>
-                    <p className="text-gray-300 text-xs">
-                      {row.starts_at ? new Date(row.starts_at).toLocaleDateString() : "-"} -{" "}
-                      {row.ends_at ? new Date(row.ends_at).toLocaleDateString() : "-"}
-                    </p>
+              <button
+                type="button"
+                className="shrink-0 rounded-lg p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white"
+                onClick={onClose}
+                aria-label="Close"
+              >
+                <X size={22} />
+              </button>
+            </div>
+          </div>
+
+          {/* Scrollable body */}
+          <div className="flex-1 overflow-y-auto overscroll-contain px-6 py-6 sm:px-8 sm:py-7">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2 lg:gap-8">
+              {/* Left column */}
+              <div className="space-y-6">
+                <SectionCard title="Account details">
+                  <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                    <DetailField label="First name" value={user.firstName} />
+                    <DetailField label="Last name" value={user.lastName} />
+                    <DetailField label="Email" value={user.email} className="sm:col-span-2" />
+                    <DetailField label="Phone" value={user.phone || "—"} />
+                    <DetailField
+                      label="Member since"
+                      value={
+                        user.createdAt
+                          ? new Date(user.createdAt).toLocaleDateString()
+                          : "N/A"
+                      }
+                    />
+                    <DetailField
+                      label="School max level"
+                      value={String(user.schoolMaxLevel ?? 0)}
+                    />
+                    <DetailField label="Account status" value="Active" />
                   </div>
-                ))}
+                </SectionCard>
+
+                <SectionCard title="Activity">
+                  {user.role === "teacher" && (
+                    <p className="text-sm text-gray-300">
+                      <span className="text-white font-medium">
+                        {user.courses?.length || 0}
+                      </span>{" "}
+                      active courses
+                    </p>
+                  )}
+                  {user.role === "student" && (
+                    <p className="text-sm text-gray-300">
+                      School access level:{" "}
+                      <span className="text-white font-medium">
+                        {user.schoolMaxLevel ?? 0}
+                      </span>
+                    </p>
+                  )}
+                  {user.role !== "teacher" && user.role !== "student" && (
+                    <p className="text-sm text-gray-400">No activity summary for this role.</p>
+                  )}
+                </SectionCard>
               </div>
+
+              {/* Right column — subscription */}
+              <div className="space-y-6">
+                <SectionCard
+                  title="Current subscription"
+                  description="Live status from the user's active subscription window."
+                >
+                  <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <DetailField
+                      label="Status"
+                      value={subscriptionStatus?.subscription_status || "none"}
+                    />
+                    <DetailField
+                      label="Plan"
+                      value={subscriptionStatus?.plan_name || "—"}
+                    />
+                    <DetailField
+                      label="Ends"
+                      value={
+                        subscriptionStatus?.ends_at
+                          ? new Date(subscriptionStatus.ends_at).toLocaleString()
+                          : "—"
+                      }
+                      className="sm:col-span-2"
+                    />
+                  </dl>
+
+                  {subscriptionStatus?.subscription_id ? (
+                    <div className="mt-5 flex flex-wrap gap-2 border-t border-gray-700/80 pt-5">
+                      {isSuspended ? (
+                        <button
+                          type="button"
+                          onClick={handleRestoreAccess}
+                          className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-600"
+                        >
+                          Restore access
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSuspendAccess}
+                          className="rounded-lg bg-red-900/80 px-4 py-2 text-sm font-medium text-red-100 hover:bg-red-800"
+                        >
+                          Suspend access
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="mt-4 text-sm text-gray-400">
+                      No active subscription record. Grant access below.
+                    </p>
+                  )}
+                </SectionCard>
+
+                <SectionCard
+                  title="Grant access manually"
+                  description="Creates or extends a trimester without mobile-money payment."
+                >
+                  <div className="space-y-3">
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-400">
+                        Plan
+                      </label>
+                      <select
+                        value={manualPlanCode}
+                        onChange={(e) => setManualPlanCode(e.target.value)}
+                        className={inputClass}
+                      >
+                        <option value="student_trimester">
+                          Student — courses + library
+                        </option>
+                        <option value="library_trimester">Library only</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1.5 block text-xs font-medium text-gray-400">
+                        Note (optional)
+                      </label>
+                      <input
+                        value={manualReason}
+                        onChange={(e) => setManualReason(e.target.value)}
+                        placeholder="e.g. Paid in cash at office"
+                        className={inputClass}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleManualGrant}
+                      className="w-full rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-indigo-500"
+                    >
+                      Grant / extend trimester
+                    </button>
+                  </div>
+                </SectionCard>
+
+                <SectionCard title="Subscription history">
+                  {history.length === 0 ? (
+                    <p className="text-sm text-gray-400">No subscription history yet.</p>
+                  ) : (
+                    <ul className="max-h-52 space-y-2 overflow-y-auto pr-1">
+                      {history.map((row) => (
+                        <li
+                          key={row.id}
+                          className="rounded-lg border border-gray-700/80 bg-gray-800/80 px-4 py-3"
+                        >
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-100">
+                              {row.plan?.name || row.plan?.code || "Plan"}
+                            </p>
+                            <span className="rounded-full bg-gray-900 px-2 py-0.5 text-xs text-gray-300">
+                              {row.status}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-xs text-gray-400">
+                            {row.starts_at
+                              ? new Date(row.starts_at).toLocaleDateString()
+                              : "—"}{" "}
+                            →{" "}
+                            {row.ends_at
+                              ? new Date(row.ends_at).toLocaleDateString()
+                              : "—"}
+                          </p>
+                          {row.access_state ? (
+                            <p className="mt-1 text-xs text-gray-500">
+                              Access: {row.access_state}
+                            </p>
+                          ) : null}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </SectionCard>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="shrink-0 border-t border-gray-700 bg-gray-900/50 px-6 py-4 sm:px-8">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-gray-600 bg-gray-800 px-5 py-2 text-sm font-medium text-gray-200 hover:bg-gray-700"
+              >
+                Close
+              </button>
             </div>
           </div>
         </motion.div>

@@ -173,7 +173,6 @@ export const CreateManualSubscription = async ({
     .from("subscription_plans")
     .select("id,duration_months")
     .eq("code", planCode)
-    .eq("active", true)
     .single();
   if (planError) throw new Error(planError.message);
 
@@ -185,6 +184,14 @@ export const CreateManualSubscription = async ({
   const {
     data: { user: actor },
   } = await supabase.auth.getUser();
+
+  const nowIso = new Date().toISOString();
+  await supabase
+    .from("user_subscriptions")
+    .update({ status: "cancelled", updated_at: nowIso })
+    .eq("user_id", userId)
+    .eq("status", "active")
+    .gte("ends_at", nowIso);
 
   const { data, error } = await supabase
     .from("user_subscriptions")
@@ -201,7 +208,44 @@ export const CreateManualSubscription = async ({
     .single();
   if (error) throw new Error(error.message);
 
+  await supabase
+    .from("user_subscriptions")
+    .update({
+      access_state: "full",
+      access_state_note: reason || null,
+      access_state_updated_at: new Date().toISOString(),
+    })
+    .eq("id", data.id);
+
   await supabase.rpc("apply_subscription_entitlement", { p_user_id: userId });
 
   return { ...data, reason: reason || null };
+};
+
+export const SetUserSubscriptionAccessState = async ({
+  subscriptionId,
+  accessState,
+  note,
+}) => {
+  const { error } = await supabase.rpc("set_subscription_access_state", {
+    p_subscription_id: subscriptionId,
+    p_access_state: accessState,
+    p_note: note || null,
+  });
+  if (error) throw new Error(error.message);
+  return { success: true };
+};
+
+export const GetSubscriptionPaymentsEnabled = async () => {
+  const { data, error } = await supabase.rpc("subscription_payments_enabled");
+  if (error) throw new Error(error.message);
+  return data === true;
+};
+
+export const SetSubscriptionPaymentsEnabled = async (enabled) => {
+  const { error } = await supabase.rpc("set_subscription_payments_enabled", {
+    p_enabled: !!enabled,
+  });
+  if (error) throw new Error(error.message);
+  return { enabled: !!enabled };
 };

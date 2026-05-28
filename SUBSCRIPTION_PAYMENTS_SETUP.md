@@ -16,6 +16,8 @@ Run the Supabase migrations in order, including:
 2. `supabase/migrations/017_paid_access_rls_gating.sql`
 3. `supabase/migrations/018_webhook_logs_and_subscription_non_overlap.sql`
 4. `supabase/migrations/019_flutterwave_installments_and_access_states.sql`
+5. `supabase/migrations/020_subscription_payments_toggle.sql`
+6. `supabase/migrations/021_subscription_entitlement_sync.sql`
 
 Verify that these exist:
 
@@ -24,6 +26,17 @@ Verify that these exist:
 - `v_subscription_receivables`
 - `record_subscription_installment_payment(...)`
 - `set_subscription_access_state(...)`
+- `subscription_payments_enabled()` / `set_subscription_payments_enabled(...)`
+
+## Admin: disable in-app payments (manual access only)
+
+In the backoffice **Subscriptions** page, use **In-app subscription payments** to turn checkout on or off for both plans.
+
+When payments are **disabled** (default after migration `020`):
+
+- The mobile app shows a message instead of starting mobile-money checkout.
+- Admins grant access from **Users → user details → Grant / Extend Trimester**.
+- Admins can **Suspend access** or **Restore access** per user (subscription row stays; access is blocked via `suspended`).
 
 ## 2) Deploy Edge Functions
 

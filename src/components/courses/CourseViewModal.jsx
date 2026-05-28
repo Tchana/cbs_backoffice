@@ -2,7 +2,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   X,
   BookOpen,
-  Users,
   GraduationCap,
   Plus,
   ChevronDown,
@@ -468,51 +467,14 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
               </div>
             </div>
 
-            {/* Enrollments Section */}
             <div className="pt-6 border-t border-gray-700">
-              <div className="flex items-center space-x-2 mb-4">
-                <Users className="w-5 h-5 text-indigo-500" />
-                <h3 className="text-lg font-medium text-white">Enrollments</h3>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-400 text-sm">
-                  Total Students: {course.enrollments?.length || 0}
-                </p>
-                {course.enrollments && course.enrollments.length > 0 ? (
-                  <div className="mt-4 space-y-2">
-                    {course.enrollments.slice(0, 3).map((enrollment) => (
-                      <div
-                        key={enrollment.id}
-                        className="bg-gray-700 rounded-lg p-3 flex items-center space-x-3"
-                      >
-                        <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white font-medium">
-                          {enrollment.student.firstName[0]}
-                        </div>
-                        <div>
-                          <p className="text-white font-medium">
-                            {`${enrollment.student.firstName} ${enrollment.student.lastName}`}
-                          </p>
-                          <p className="text-gray-400 text-sm">
-                            Enrolled:{" "}
-                            {new Date(
-                              enrollment.createdAt
-                            ).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {course.enrollments.length > 3 && (
-                      <p className="text-gray-400 text-sm text-center">
-                        +{course.enrollments.length - 3} more students
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <p className="text-gray-400 text-sm italic">
-                    No students enrolled yet
-                  </p>
-                )}
-              </div>
+              <p className="text-gray-400 text-sm">
+                Students with an active school subscription at level{" "}
+                <span className="text-white font-medium">
+                  {course.level || "—"}
+                </span>{" "}
+                or higher can access this course when it is marked active.
+              </p>
             </div>
           </div>
 

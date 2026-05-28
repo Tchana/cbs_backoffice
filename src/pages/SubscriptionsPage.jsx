@@ -2,6 +2,10 @@
 import Header from "../components/common/Header";
 import { useApiLoader } from "../contexts/ApiLoaderContext";
 import { supabase } from "../lib/supabase";
+import {
+  GetSubscriptionPaymentsEnabled,
+  SetSubscriptionPaymentsEnabled,
+} from "../services/UsersManagement";
 
 const tabs = [
   { value: "active", label: "Active" },
@@ -89,9 +93,11 @@ const SubscriptionsPage = () => {
   });
   const [planEdits, setPlanEdits] = useState({});
   const [savingPlanId, setSavingPlanId] = useState("");
+  const [paymentsEnabled, setPaymentsEnabled] = useState(false);
+  const [savingPaymentsToggle, setSavingPaymentsToggle] = useState(false);
 
   const load = async () => {
-    const [receivables, userInstallments, planRows, planInstRows] =
+    const [receivables, userInstallments, planRows, planInstRows, paymentsOn] =
       await runWithLoader(() =>
         Promise.all([
           supabase
@@ -110,6 +116,7 @@ const SubscriptionsPage = () => {
             .from("subscription_plan_installments")
             .select("*")
             .order("installment_number", { ascending: true }),
+          GetSubscriptionPaymentsEnabled(),
         ])
       );
 
@@ -133,6 +140,7 @@ const SubscriptionsPage = () => {
       }, {})
     );
     setPlanInstallments(planInstRows.data || []);
+    setPaymentsEnabled(!!paymentsOn);
     setInstallmentsBySubscription(
       (userInstallments.data || []).reduce((acc, item) => {
         acc[item.subscription_id] = acc[item.subscription_id] || [];
@@ -189,6 +197,20 @@ const SubscriptionsPage = () => {
     });
     if (error) throw new Error(error.message);
     await load();
+  };
+
+  const togglePaymentsEnabled = async () => {
+    const next = !paymentsEnabled;
+    setSavingPaymentsToggle(true);
+    try {
+      await runWithLoader(() => SetSubscriptionPaymentsEnabled(next));
+      setPaymentsEnabled(next);
+    } catch (e) {
+      console.error("Toggle subscription payments failed", e);
+      window.alert(e.message || "Failed to update payment setting");
+    } finally {
+      setSavingPaymentsToggle(false);
+    }
   };
 
   const updatePlanEdit = (planId, field, value) => {
@@ -274,6 +296,30 @@ const SubscriptionsPage = () => {
       <Header title="Subscriptions" />
 
       <div className="p-6 space-y-6">
+        <section className="bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-xl border border-gray-700 p-5">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-100">In-app subscription payments</h2>
+              <p className="mt-1 text-sm text-gray-400">
+                When off, users cannot pay from the mobile app. Grant or suspend access per user
+                below or from the user profile.
+              </p>
+            </div>
+            <label className="inline-flex items-center gap-3 rounded-lg border border-gray-700 bg-gray-900/60 px-4 py-3">
+              <input
+                type="checkbox"
+                checked={paymentsEnabled}
+                disabled={savingPaymentsToggle}
+                onChange={togglePaymentsEnabled}
+                className="h-4 w-4 rounded border-gray-600 bg-gray-900"
+              />
+              <span className="text-sm text-gray-200">
+                {paymentsEnabled ? "Payments enabled" : "Payments disabled"}
+              </span>
+            </label>
+          </div>
+        </section>
+
         <section className="bg-gray-800 bg-opacity-50 backdrop-blur-md rounded-xl border border-gray-700 p-5">
           <div className="flex flex-wrap gap-3 items-center justify-between">
             <div className="flex flex-wrap gap-2">

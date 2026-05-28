@@ -92,10 +92,10 @@ const StudentViewModal = ({ user, onClose }) => {
                 </p>
                 <div>
                   <label className="text-gray-400 text-sm block">
-                    Enrolled In
+                    School access level
                   </label>
                   <p className="text-white">
-                    {user.enrollments?.length || 0} courses
+                    Level {user.schoolMaxLevel ?? 0}
                   </p>
                 </div>
               </div>
