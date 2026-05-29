@@ -80,6 +80,28 @@ const TeacherViewModal = ({ user, onClose }) => {
                 <label className="text-gray-400 text-sm">Email</label>
                 <p className="text-white font-medium">{user.email}</p>
               </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Phone</label>
+                <p className="text-white font-medium">{user.phone || "—"}</p>
+              </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Vocation</label>
+                <p className="text-white font-medium whitespace-pre-wrap">
+                  {(user.vocation || "").trim() || "—"}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Testimony</label>
+                <p className="text-white font-medium whitespace-pre-wrap">
+                  {(user.testimony || "").trim() || "—"}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Journey (Parcours)</label>
+                <p className="text-white font-medium whitespace-pre-wrap">
+                  {(user.journey || "").trim() || "—"}
+                </p>
+              </div>
               <div>
                 <label className="text-gray-400 text-sm">Role</label>
                 <p className="text-white font-medium capitalize">{user.role}</p>

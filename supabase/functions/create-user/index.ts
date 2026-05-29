@@ -74,7 +74,17 @@ Deno.serve(async (req) => {
     }
 
     const body = await req.json();
-    const { email, password, first_name, last_name, role, phone } = body;
+    const {
+      email,
+      password,
+      first_name,
+      last_name,
+      role,
+      phone,
+      vocation,
+      testimony,
+      journey,
+    } = body;
 
     if (!email || !password || !first_name || !last_name || !role) {
       return new Response(
@@ -91,11 +101,20 @@ Deno.serve(async (req) => {
       );
     }
 
-    const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
+    const { data: newUser, error: createError } =
+      await adminClient.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { first_name, last_name, role, phone: phone || null },
+      user_metadata: {
+        first_name,
+        last_name,
+        role,
+        phone: phone || null,
+        vocation: vocation || null,
+        testimony: testimony || null,
+        journey: journey || null,
+      },
     });
 
     if (createError) {
@@ -105,11 +124,15 @@ Deno.serve(async (req) => {
       );
     }
 
-    if (newUser.user?.id && phone) {
-      await adminClient
-        .from("profiles")
-        .update({ phone })
-        .eq("id", newUser.user.id);
+    if (newUser.user?.id) {
+      const updates: Record<string, unknown> = {};
+      if (phone) updates.phone = phone;
+      if (vocation) updates.vocation = vocation;
+      if (testimony) updates.testimony = testimony;
+      if (journey) updates.journey = journey;
+      if (Object.keys(updates).length > 0) {
+        await adminClient.from("profiles").update(updates).eq("id", newUser.user.id);
+      }
     }
 
     return new Response(

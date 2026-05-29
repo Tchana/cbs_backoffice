@@ -67,6 +67,9 @@ const TeacherTable = ({ updateUserStats }) => {
       lastName: "",
       email: "",
       phone: "",
+      vocation: "",
+      testimony: "",
+      journey: "",
       password: "",
     });
   };
@@ -90,7 +93,10 @@ const TeacherTable = ({ updateUserStats }) => {
           editValues.lastName,
           "teacher",
           editValues.p_image || null,
-          editValues.phone
+          editValues.phone,
+          editValues.vocation,
+          editValues.testimony,
+          editValues.journey
         )
       );
       const updatedUsers = await runWithLoader(() => GetUsers());
@@ -112,6 +118,9 @@ const TeacherTable = ({ updateUserStats }) => {
       lastName: user.lastName,
       email: user.email,
       phone: user.phone || "",
+      vocation: user.vocation || "",
+      testimony: user.testimony || "",
+      journey: user.journey || "",
       pImage: user.pImage || null,
       role: user.role,
     });
@@ -139,7 +148,12 @@ const TeacherTable = ({ updateUserStats }) => {
           editValues.lastName,
           editValues.role,
           editValues.phone,
-          editValues.p_image || null
+          editValues.p_image || null,
+          undefined,
+          undefined,
+          editValues.vocation,
+          editValues.testimony,
+          editValues.journey
         );
         return GetUsers();
       });
@@ -290,8 +304,8 @@ const TeacherTable = ({ updateUserStats }) => {
             editValues={editValues}
             handleInputChange={handleInputChange}
             setEditValues={setEditValues}
-            title={editingUserId ? "Edit Teacher" : "Register User"}
-            submitLabel={editingUserId ? "Save Changes" : "Register"}
+            title={editingUserId ? "Edit teacher" : "Create teacher"}
+            submitLabel={editingUserId ? "Save changes" : "Create teacher"}
             isEdit={Boolean(editingUserId)}
             isSubmitting={isSavingEdit}
           />

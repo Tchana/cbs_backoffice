@@ -21,36 +21,41 @@ export const AddBook = async (
   language,
   accessTier = "public"
 ) => {
+  if (!(bookCover instanceof File)) {
+    throw new Error("Book cover is required.");
+  }
+  if (!(book instanceof File)) {
+    throw new Error("Book file is required.");
+  }
+
   let bookCoverUrl = null;
   let bookFileUrl = null;
 
-  if (bookCover && bookCover instanceof File) {
-    const ext = bookCover.name.split(".").pop();
-    const path = `covers/${crypto.randomUUID()}.${ext}`;
-    const { error: coverError } = await supabase.storage
-      .from("book-covers")
-      .upload(path, bookCover, { upsert: true });
-    if (!coverError) {
-      const { data: urlData } = supabase.storage
-        .from("book-covers")
-        .getPublicUrl(path);
-      bookCoverUrl = urlData.publicUrl;
-    }
+  const coverExt = bookCover.name.split(".").pop();
+  const coverPath = `covers/${crypto.randomUUID()}.${coverExt}`;
+  const { error: coverError } = await supabase.storage
+    .from("book-covers")
+    .upload(coverPath, bookCover, { upsert: true });
+  if (coverError) {
+    throw new Error(`Cover upload failed: ${coverError.message}`);
   }
+  const { data: coverUrlData } = supabase.storage
+    .from("book-covers")
+    .getPublicUrl(coverPath);
+  bookCoverUrl = coverUrlData.publicUrl;
 
-  if (book && book instanceof File) {
-    const ext = book.name.split(".").pop();
-    const path = `files/${crypto.randomUUID()}.${ext}`;
-    const { error: fileError } = await supabase.storage
-      .from("book-files")
-      .upload(path, book, { upsert: true });
-    if (!fileError) {
-      const { data: urlData } = supabase.storage
-        .from("book-files")
-        .getPublicUrl(path);
-      bookFileUrl = urlData.publicUrl;
-    }
+  const fileExt = book.name.split(".").pop();
+  const filePath = `files/${crypto.randomUUID()}.${fileExt}`;
+  const { error: fileError } = await supabase.storage
+    .from("book-files")
+    .upload(filePath, book, { upsert: true });
+  if (fileError) {
+    throw new Error(`Book file upload failed: ${fileError.message}`);
   }
+  const { data: fileUrlData } = supabase.storage
+    .from("book-files")
+    .getPublicUrl(filePath);
+  bookFileUrl = fileUrlData.publicUrl;
 
   const { data, error } = await supabase
     .from("books")

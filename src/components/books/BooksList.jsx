@@ -36,6 +36,7 @@ const BookList = () => {
     book: null,
     accessTier: "public",
   });
+  const [formError, setFormError] = useState("");
 
   useEffect(() => {
     refreshData();
@@ -82,6 +83,7 @@ const BookList = () => {
   const handleInputChange = (e, field) => {
     if (field === "bookCover" || field === "book") {
       setEditValues({ ...editValues, [field]: e.target.files[0] });
+      setFormError("");
     } else {
       setEditValues({ ...editValues, [field]: e.target.value });
     }
@@ -90,6 +92,7 @@ const BookList = () => {
   const handleRegistrationClick = async () => {
     await loadCategoryOptions();
     setEditingBook(null);
+    setFormError("");
     setIsRegistering(true);
     setEditValues({
       title: "",
@@ -105,6 +108,7 @@ const BookList = () => {
 
   const handleEditClick = async (book) => {
     await loadCategoryOptions();
+    setFormError("");
     setEditingBook(book);
     setEditValues({
       title: book.title ?? "",
@@ -121,6 +125,7 @@ const BookList = () => {
   const handleCloseModal = () => {
     setIsRegistering(false);
     setEditingBook(null);
+    setFormError("");
     setEditValues({
       title: "",
       category: "",
@@ -153,7 +158,18 @@ const BookList = () => {
   };
 
   const handleConfirmRegistration = async () => {
+    const missingCover = !(editValues.bookCover instanceof File);
+    const missingBook = !(editValues.book instanceof File);
+    if (missingCover || missingBook) {
+      const parts = [];
+      if (missingCover) parts.push("book cover");
+      if (missingBook) parts.push("book file");
+      setFormError(`Please upload ${parts.join(" and ")} before creating the book.`);
+      return;
+    }
+
     try {
+      setFormError("");
       await runWithLoader(() =>
         AddBook(
         editValues.title,
@@ -170,7 +186,7 @@ const BookList = () => {
       handleCloseModal();
     } catch (err) {
       console.error("Error adding book:", err);
-      setError("Failed to add book. Please try again.");
+      setFormError(err.message || "Failed to add book. Please try again.");
     }
   };
 
@@ -285,6 +301,8 @@ const BookList = () => {
             categoryLoadError={categoryLoadError}
             title={editingBook ? "Edit Book" : "Add New Book"}
             submitLabel={editingBook ? "Save" : "Add Book"}
+            isEdit={Boolean(editingBook)}
+            formError={formError}
           />
         )}
       </AnimatePresence>

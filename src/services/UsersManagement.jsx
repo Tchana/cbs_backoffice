@@ -8,6 +8,9 @@ function mapProfileToUser(row) {
     firstName: row.first_name || "",
     lastName: row.last_name || "",
     phone: row.phone || "",
+    vocation: row.vocation || "",
+    testimony: row.testimony || "",
+    journey: row.journey || "",
     role: row.role || "teacher",
     subscriptionType: row.subscription_type || "none",
     schoolMaxLevel: row.school_max_level ?? 0,
@@ -62,7 +65,7 @@ export const lessons = async () => {
 export const GetUsers = async () => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, phone, role, subscription_type, school_max_level, avatar_url, created_at")
+    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, subscription_type, school_max_level, avatar_url, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -82,7 +85,10 @@ export const editUser = async (
   phone,
   pImage,
   subscriptionType,
-  schoolMaxLevel
+  schoolMaxLevel,
+  vocation,
+  testimony,
+  journey
 ) => {
   const updates = {
     updated_at: new Date().toISOString(),
@@ -91,6 +97,9 @@ export const editUser = async (
   if (firstname !== undefined) updates.first_name = firstname;
   if (lastname !== undefined) updates.last_name = lastname;
   if (phone !== undefined) updates.phone = phone || null;
+  if (vocation !== undefined) updates.vocation = vocation || null;
+  if (testimony !== undefined) updates.testimony = testimony || null;
+  if (journey !== undefined) updates.journey = journey || null;
   if (role !== undefined) updates.role = role;
   if (subscriptionType !== undefined) updates.subscription_type = subscriptionType;
   if (schoolMaxLevel !== undefined) updates.school_max_level = Number(schoolMaxLevel) || 0;
@@ -128,7 +137,7 @@ export const editUser = async (
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, phone, role, subscription_type, school_max_level, avatar_url, created_at")
+    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, subscription_type, school_max_level, avatar_url, created_at")
     .eq("id", id)
     .single();
 

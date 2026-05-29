@@ -11,7 +11,12 @@ const BookRegistrationModal = ({
   categoryLoadError = "",
   title = "Add New Book",
   submitLabel = "Add Book",
+  isEdit = false,
+  formError = "",
 }) => {
+  const coverSelected = editValues.bookCover instanceof File;
+  const bookSelected = editValues.book instanceof File;
+  const canSubmitCreate = coverSelected && bookSelected;
   return createPortal(
     <AnimatePresence>
       <motion.div
@@ -138,27 +143,51 @@ const BookRegistrationModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Book Cover
+                Book Cover {!isEdit && <span className="text-red-400">*</span>}
               </label>
               <input
                 type="file"
                 onChange={(e) => handleInputChange(e, "bookCover")}
                 accept="image/*"
+                required={!isEdit}
                 className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {coverSelected && (
+                <p className="mt-1 text-xs text-emerald-400">
+                  Selected: {editValues.bookCover.name}
+                </p>
+              )}
+              {!isEdit && !coverSelected && (
+                <p className="mt-1 text-xs text-gray-500">Required when creating a book.</p>
+              )}
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Book File
+                Book File {!isEdit && <span className="text-red-400">*</span>}
               </label>
               <input
                 type="file"
                 onChange={(e) => handleInputChange(e, "book")}
                 accept=".pdf,.doc,.docx"
+                required={!isEdit}
                 className="w-full bg-gray-700 text-white rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
+              {bookSelected && (
+                <p className="mt-1 text-xs text-emerald-400">
+                  Selected: {editValues.book.name}
+                </p>
+              )}
+              {!isEdit && !bookSelected && (
+                <p className="mt-1 text-xs text-gray-500">Required when creating a book.</p>
+              )}
             </div>
+
+            {formError && (
+              <p className="rounded-lg border border-red-800 bg-red-900/30 px-3 py-2 text-sm text-red-300">
+                {formError}
+              </p>
+            )}
           </div>
 
           {/* Action Buttons */}
@@ -171,7 +200,8 @@ const BookRegistrationModal = ({
             </button>
             <button
               onClick={onRegister}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              disabled={!isEdit && !canSubmitCreate}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {submitLabel}
             </button>
