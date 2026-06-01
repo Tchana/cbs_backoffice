@@ -103,7 +103,6 @@ const CoursesTable = ({ updateCourseStats }) => {
       title: "",
       description: "",
       level: "",
-      priceAmount: 0,
       teacherFirstName: "",
       teacherLastName: "",
     });
@@ -122,8 +121,7 @@ const CoursesTable = ({ updateCourseStats }) => {
     teacherLastName,
     title,
     description,
-    level,
-    priceAmount
+    level
   ) => {
     try {
       const updatedCourses = await runWithLoader(async () => {
@@ -133,8 +131,7 @@ const CoursesTable = ({ updateCourseStats }) => {
           teacherLastName,
           title,
           description,
-          level,
-          priceAmount
+          level
         );
         return GetCourses();
       });

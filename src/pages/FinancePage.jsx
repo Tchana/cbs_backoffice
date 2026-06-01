@@ -1,5 +1,7 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import Header from "../components/common/Header";
+import CourseFeesCatalogPanel from "../components/finance/CourseFeesCatalogPanel";
+import CoursePaymentsPanel from "../components/finance/CoursePaymentsPanel";
 import { useApiLoader } from "../contexts/ApiLoaderContext";
 import {
   CreateManualDebt,
@@ -183,7 +185,13 @@ const FinancePage = () => {
               Subscription payments
             </TabButton>
             <TabButton active={view === "fees"} onClick={() => setView("fees")}>
+              Course fees (legacy)
+            </TabButton>
+            <TabButton active={view === "courseFees"} onClick={() => setView("courseFees")}>
               Course fees
+            </TabButton>
+            <TabButton active={view === "coursePayments"} onClick={() => setView("coursePayments")}>
+              Course payments
             </TabButton>
           </div>
           <button
@@ -265,6 +273,10 @@ const FinancePage = () => {
             </div>
           </section>
         )}
+
+        {view === "courseFees" && <CourseFeesCatalogPanel />}
+
+        {view === "coursePayments" && <CoursePaymentsPanel />}
 
         {view === "fees" && (
           <section className="rounded-xl border border-gray-700 bg-gray-800/80 p-5 space-y-4">

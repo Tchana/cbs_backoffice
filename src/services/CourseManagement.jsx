@@ -6,8 +6,7 @@ export const CreateCourse = async (
   teacherLastName,
   title,
   description,
-  level,
-  priceAmount = 0
+  level
 ) => {
   const { data: teachersData, error: teacherError } = await supabase
     .from("profiles")
@@ -43,18 +42,17 @@ export const CreateCourse = async (
       title,
       description,
       level: level || null,
-      price_amount: Number.isFinite(Number(priceAmount)) ? Number(priceAmount) : 0,
       teacher_id: teacher.id,
       course_cover_url: courseCoverUrl,
       active: true,
     })
-    .select("id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at")
+    .select(
+      "id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at"
+    )
     .single();
 
   if (error) throw new Error(error.message);
 
-  // Keep forum in sync: every new course gets a room
-  // with the same name as the course title.
   try {
     await supabase.from("rooms").insert({
       name: title,
@@ -63,7 +61,6 @@ export const CreateCourse = async (
       created_by: teacher.id,
     });
   } catch (roomErr) {
-    // Do not block course creation if room creation fails.
     console.error("Course created but room creation failed:", roomErr);
   }
 
@@ -84,17 +81,28 @@ export const CreateCourse = async (
         }
       : null,
     lessons: [],
+    courseFee: null,
   };
 };
 
 export const GetCourses = async () => {
   const { data: coursesData, error: coursesError } = await supabase
     .from("courses")
-    .select("id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at")
+    .select(
+      "id, title, description, level, price_amount, currency, teacher_id, course_cover_url, active, created_at"
+    )
     .order("created_at", { ascending: false });
 
   if (coursesError) throw new Error(coursesError.message);
   const courses = coursesData || [];
+
+  const { data: feesData } = await supabase
+    .from("course_fees")
+    .select("course_id, amount, currency, notes");
+  const feesByCourse = (feesData || []).reduce((acc, f) => {
+    acc[f.course_id] = f;
+    return acc;
+  }, {});
 
   const teacherIds = [...new Set(courses.map((c) => c.teacher_id).filter(Boolean))];
   const { data: profilesData } = await supabase
@@ -124,6 +132,7 @@ export const GetCourses = async () => {
 
   return courses.map((row) => {
     const teacher = profilesById[row.teacher_id];
+    const fee = feesByCourse[row.id] || null;
     return {
       id: row.id,
       title: row.title,
@@ -144,6 +153,13 @@ export const GetCourses = async () => {
       active: row.active ?? true,
       createdAt: row.created_at || null,
       lessons: lessonsByCourse[row.id] || [],
+      courseFee: fee
+        ? {
+            amount: fee.amount,
+            currency: fee.currency ?? "XAF",
+            notes: fee.notes,
+          }
+        : null,
     };
   });
 };
@@ -154,8 +170,7 @@ export const editCourse = async (
   description,
   level,
   teacherFirstName,
-  teacherLastName,
-  priceAmount
+  teacherLastName
 ) => {
   const { data: teachersData, error: teacherError } = await supabase
     .from("profiles")
@@ -176,9 +191,6 @@ export const editCourse = async (
       title,
       description,
       level: level || null,
-      ...(priceAmount !== undefined && priceAmount !== null
-        ? { price_amount: Number(priceAmount) || 0 }
-        : {}),
       teacher_id: teacher.id,
       updated_at: new Date().toISOString(),
     })

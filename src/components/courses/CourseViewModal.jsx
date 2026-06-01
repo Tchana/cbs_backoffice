@@ -23,6 +23,10 @@ import {
   GetAssignmentsByCourse,
   UpdateAssignment,
 } from "../../services/AssignmentManagement";
+import {
+  DeleteCourseFee,
+  UpsertCourseFee,
+} from "../../services/CourseFeeManagement";
 import AssignmentCreateModal from "../assignments/AssignmentCreateModal";
 import AssignmentGradeModal from "../assignments/AssignmentGradeModal";
 
@@ -50,6 +54,10 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
   const [assignmentToGrade, setAssignmentToGrade] = useState(null);
   const [dueDateDraftById, setDueDateDraftById] = useState({});
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeNotes, setFeeNotes] = useState("");
+  const [feeSaving, setFeeSaving] = useState(false);
+  const [feeError, setFeeError] = useState("");
 
   const reloadAssignments = async () => {
     try {
@@ -84,8 +92,47 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   useEffect(() => {
     if (!course?.id) return;
     reloadAssignments();
+    const fee = course.courseFee;
+    setFeeAmount(fee?.amount ? String(fee.amount) : "");
+    setFeeNotes(fee?.notes || "");
+    setFeeError("");
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.id]);
+  }, [course?.id, course?.courseFee?.amount]);
+
+  const handleSaveCourseFee = async () => {
+    setFeeError("");
+    setFeeSaving(true);
+    try {
+      await runWithLoader(() =>
+        UpsertCourseFee({
+          courseId: course.id,
+          amount: feeAmount,
+          notes: feeNotes,
+        })
+      );
+      onLessonChange?.();
+    } catch (e) {
+      setFeeError(e.message || "Failed to save course fee.");
+    } finally {
+      setFeeSaving(false);
+    }
+  };
+
+  const handleRemoveCourseFee = async () => {
+    if (!window.confirm("Remove the catalog fee for this course?")) return;
+    setFeeError("");
+    setFeeSaving(true);
+    try {
+      await runWithLoader(() => DeleteCourseFee(course.id));
+      setFeeAmount("");
+      setFeeNotes("");
+      onLessonChange?.();
+    } catch (e) {
+      setFeeError(e.message || "Failed to remove course fee.");
+    } finally {
+      setFeeSaving(false);
+    }
+  };
 
   const handleCreateLesson = async (e) => {
     e.preventDefault();
@@ -247,6 +294,49 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                 <p className="text-white font-medium capitalize">
                   {course.level}
                 </p>
+              </div>
+              <div className="col-span-2 rounded-lg border border-gray-700 bg-gray-900/40 p-4 space-y-3">
+                <label className="text-gray-400 text-sm block">Course fee (catalog)</label>
+                <p className="text-xs text-gray-500">
+                  Set in Finance → Course fees, or here. Used as the suggested amount for
+                  student payments.
+                </p>
+                <div className="flex flex-wrap gap-2 items-end">
+                  <input
+                    type="number"
+                    min="1"
+                    value={feeAmount}
+                    onChange={(e) => setFeeAmount(e.target.value)}
+                    placeholder="Amount (XAF)"
+                    className="w-36 rounded-md bg-gray-700 px-3 py-2 text-white text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={feeNotes}
+                    onChange={(e) => setFeeNotes(e.target.value)}
+                    placeholder="Notes (optional)"
+                    className="flex-1 min-w-[160px] rounded-md bg-gray-700 px-3 py-2 text-white text-sm"
+                  />
+                  <button
+                    type="button"
+                    disabled={feeSaving || !feeAmount}
+                    onClick={handleSaveCourseFee}
+                    className="rounded-md bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-500 disabled:opacity-40"
+                  >
+                    {course.courseFee ? "Update fee" : "Add fee"}
+                  </button>
+                  {course.courseFee && (
+                    <button
+                      type="button"
+                      disabled={feeSaving}
+                      onClick={handleRemoveCourseFee}
+                      className="rounded-md bg-red-900/50 px-3 py-2 text-xs text-red-200 hover:bg-red-800/50 disabled:opacity-40"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+                {feeError && <p className="text-xs text-red-400">{feeError}</p>}
               </div>
               <div>
                 <label className="text-gray-400 text-sm">Teacher</label>
