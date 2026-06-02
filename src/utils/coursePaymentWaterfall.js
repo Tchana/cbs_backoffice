@@ -26,7 +26,7 @@ export function computeWaterfallAllocations(depositAmount, courseRows = []) {
       courseId: row.course_id,
       courseTitle: row.course_title,
       amount: apply,
-      balanceBefore: owed,
+      balanCbsefore: owed,
     });
     remaining -= apply;
   }
