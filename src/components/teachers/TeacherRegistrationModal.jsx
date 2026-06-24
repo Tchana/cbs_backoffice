@@ -11,6 +11,7 @@ import {
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import LoadingSpinner from "../common/LoadingSpinner";
+import RichTextEditor from "../common/RichTextEditor";
 
 const inputClass =
   "w-full rounded-lg border border-gray-600 bg-gray-800 px-3.5 py-2.5 text-sm text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
@@ -310,25 +311,29 @@ const TeacherRegistrationModal = ({
                       placeholder="Pastor, Evangelist, Bible teacher..."
                     />
                   </FormField>
-                  <div className="grid gap-4 lg:grid-cols-2">
+                  <div className="space-y-5">
                     <FormField label="Testimony" htmlFor="testimony">
-                      <textarea
+                      <RichTextEditor
                         id="testimony"
-                        rows={5}
+                        ariaLabel="Testimony"
+                        minHeight={220}
                         value={editValues.testimony || ""}
-                        onChange={(e) => handleInputChange(e, "testimony")}
-                        className={`${inputClass} min-h-[120px] resize-y`}
-                        placeholder="How they came to faith and their calling..."
+                        onChange={(html) =>
+                          setEditValues({ ...editValues, testimony: html })
+                        }
+                        placeholder="How they came to faith and their calling…"
                       />
                     </FormField>
                     <FormField label="Journey (Parcours)" htmlFor="journey">
-                      <textarea
+                      <RichTextEditor
                         id="journey"
-                        rows={5}
+                        ariaLabel="Journey"
+                        minHeight={220}
                         value={editValues.journey || ""}
-                        onChange={(e) => handleInputChange(e, "journey")}
-                        className={`${inputClass} min-h-[120px] resize-y`}
-                        placeholder="Training, ministry experience, education..."
+                        onChange={(html) =>
+                          setEditValues({ ...editValues, journey: html })
+                        }
+                        placeholder="Training, ministry experience, education…"
                       />
                     </FormField>
                   </div>
