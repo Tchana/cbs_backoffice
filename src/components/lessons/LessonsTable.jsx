@@ -4,6 +4,9 @@ import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-rea
 import { CreateLesson, EditLesson, DeleteLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
+import LessonViewModal from "./LessonViewModal";
+
+const TRUNCATED_COLUMN = "max-w-[200px]";
 
 const LessonsTable = ({ updateLessonsStats }) => {
   const runWithLoader = useApiLoader().runWithLoader;
@@ -16,6 +19,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
   const [deletingLessonId, setDeletingLessonId] = useState(null);
   const [registerLessonId, setRegistrationLessonId] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState(null);
+  const [viewingLesson, setViewingLesson] = useState(null);
   const [selectedValues, setSelectedValues] = useState({});
   const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
@@ -211,6 +215,14 @@ const LessonsTable = ({ updateLessonsStats }) => {
     setPageInput("");
   };
 
+  const handleViewLesson = (lesson) => {
+    setViewingLesson(lesson);
+  };
+
+  const handleCloseViewModal = () => {
+    setViewingLesson(null);
+  };
+
   return (
     <motion.div
       className="bg-gray-800 bg-opacity-50 backdrop-blur-md shadow-lg rounded-xl p-6 border border-gray-700"
@@ -308,21 +320,30 @@ const LessonsTable = ({ updateLessonsStats }) => {
         </div>
       )}
 
+      <AnimatePresence>
+        {viewingLesson && (
+          <LessonViewModal lesson={viewingLesson} onClose={handleCloseViewModal} />
+        )}
+      </AnimatePresence>
+
       {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              {["Title", "Description", "Course", "Actions"].map(
-                (heading) => (
-                  <th
-                    key={heading}
-                    className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider"
-                  >
-                    {heading}
-                  </th>
-                )
-              )}
+              {[
+                { label: "Title", className: TRUNCATED_COLUMN },
+                { label: "Description", className: TRUNCATED_COLUMN },
+                { label: "Course", className: "" },
+                { label: "Actions", className: "" },
+              ].map(({ label, className }) => (
+                <th
+                  key={label}
+                  className={`px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider ${className}`}
+                >
+                  {label}
+                </th>
+              ))}
             </tr>
           </thead>
 
@@ -335,22 +356,31 @@ const LessonsTable = ({ updateLessonsStats }) => {
                 transition={{ duration: 0.3 }}
                 ref={editingLessonId === lesson.id ? editRowRef : null}
               >
-                {["title", "description", "courseTitle"].map((field) => (
-                  <td key={field} className="px-6 py-4 whitespace-nowrap">
-                    {editingLessonId === lesson.id ? (
-                      <input
-                        type="text"
-                        defaultValue={lesson[field]}
-                        onChange={(e) => handleInputChange(e, field)}
-                        className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
-                      />
-                    ) : (
-                      <div className="text-sm font-medium text-gray-100">
-                        {lesson[field]}
-                      </div>
-                    )}
-                  </td>
-                ))}
+                {["title", "description", "courseTitle"].map((field) => {
+                  const isTruncated = field === "title" || field === "description";
+                  return (
+                    <td
+                      key={field}
+                      className={`px-6 py-4 ${isTruncated ? `${TRUNCATED_COLUMN} truncate` : "whitespace-nowrap"}`}
+                    >
+                      {editingLessonId === lesson.id ? (
+                        <input
+                          type="text"
+                          defaultValue={lesson[field]}
+                          onChange={(e) => handleInputChange(e, field)}
+                          className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
+                        />
+                      ) : (
+                        <div
+                          className={`text-sm font-medium text-gray-100 ${isTruncated ? "truncate" : ""}`}
+                          title={isTruncated ? lesson[field] : undefined}
+                        >
+                          {lesson[field]}
+                        </div>
+                      )}
+                    </td>
+                  );
+                })}
                 <td className="px-6 py-4 text-sm text-gray-300">
                   {editingLessonId === lesson.id ? (
                     <button
@@ -370,6 +400,13 @@ const LessonsTable = ({ updateLessonsStats }) => {
                     </button>
                   ) : (
                     <>
+                      <button
+                        onClick={() => handleViewLesson(lesson)}
+                        className="text-blue-400 hover:text-blue-300 mr-2"
+                        title="View lesson details"
+                      >
+                        <Eye size={18} />
+                      </button>
                       <button
                         onClick={() => handleEditClick(lesson)}
                         className="text-indigo-400 hover:text-indigo-300 mr-2"
