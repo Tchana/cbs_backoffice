@@ -17,11 +17,20 @@ const CourseRegistrationModal = ({
   handleInputChange,
   setEditValues,
   allTeachers,
+  title = "Create New Course",
+  submitLabel = "Create Course",
+  isEdit = false,
+  isSubmitting = false,
 }) => {
   const [isDragging, setIsDragging] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState(editValues.coverImage || null);
+  const [previewUrl, setPreviewUrl] = useState(
+    editValues.coverImageUrl || editValues.coverImage || null
+  );
   const [activeStep, setActiveStep] = useState(1);
   const fileInputRef = useRef(null);
+
+  const teacherSelectValue =
+    `${editValues.teacherFirstName ?? ""} ${editValues.teacherLastName ?? ""}`.trim();
 
   // Prevent body scroll when modal is open
   useEffect(() => {
@@ -30,6 +39,18 @@ const CourseRegistrationModal = ({
       document.body.style.overflow = "unset";
     };
   }, []);
+
+  useEffect(() => {
+    if (editValues.coverImage instanceof File) {
+      const reader = new FileReader();
+      reader.onloadend = () => setPreviewUrl(reader.result);
+      reader.readAsDataURL(editValues.coverImage);
+    } else if (editValues.coverImageUrl) {
+      setPreviewUrl(editValues.coverImageUrl);
+    } else {
+      setPreviewUrl(null);
+    }
+  }, [editValues.coverImage, editValues.coverImageUrl]);
 
   const handleDragOver = (e) => {
     e.preventDefault();
@@ -71,15 +92,7 @@ const CourseRegistrationModal = ({
   };
 
   const handleSubmit = () => {
-    // Pass individual values to onRegister
-    onRegister(
-      editValues.coverImage,
-      editValues.teacherFirstName,
-      editValues.teacherLastName,
-      editValues.title,
-      editValues.description,
-      editValues.level
-    );
+    onRegister();
   };
 
   const steps = [
@@ -113,6 +126,7 @@ const CourseRegistrationModal = ({
                 type="text"
                 placeholder="Enter a descriptive title for your course"
                 className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 placeholder-gray-400"
+                value={editValues.title ?? ""}
                 onChange={(e) => handleInputChange(e, "title")}
                 required
               />
@@ -124,6 +138,7 @@ const CourseRegistrationModal = ({
               </label>
               <select
                 className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={editValues.level ?? ""}
                 onChange={(e) => handleInputChange(e, "level")}
                 required
               >
@@ -136,7 +151,7 @@ const CourseRegistrationModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Course Cover Image
+                Course Cover Image{isEdit ? " (optional)" : ""}
               </label>
               <div
                 className={`relative border-2 border-dashed rounded-lg p-8 text-center transition-all duration-200 ${
@@ -169,7 +184,11 @@ const CourseRegistrationModal = ({
                       onClick={(e) => {
                         e.stopPropagation();
                         setPreviewUrl(null);
-                        setEditValues({ ...editValues, coverImage: null });
+                        setEditValues({
+                          ...editValues,
+                          coverImage: null,
+                          coverImageUrl: null,
+                        });
                         if (fileInputRef.current) {
                           fileInputRef.current.value = "";
                         }
@@ -208,6 +227,7 @@ const CourseRegistrationModal = ({
               <textarea
                 placeholder="Describe what students will learn in this course..."
                 className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 min-h-[200px] placeholder-gray-400"
+                value={editValues.description ?? ""}
                 onChange={(e) => handleInputChange(e, "description")}
                 required
               />
@@ -224,18 +244,21 @@ const CourseRegistrationModal = ({
               </label>
               <select
                 className="w-full px-4 py-3 bg-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                value={teacherSelectValue}
                 onChange={(e) => {
                   const selectedTeacher = allTeachers.find(
                     (teacher) =>
                       `${teacher.firstName} ${teacher.lastName}` ===
                       e.target.value
                   );
-                  handleInputChange(
-                    e,
-                    "teacher",
-                    selectedTeacher.firstName,
-                    selectedTeacher.lastName
-                  );
+                  if (selectedTeacher) {
+                    handleInputChange(
+                      e,
+                      "teacher",
+                      selectedTeacher.firstName,
+                      selectedTeacher.lastName
+                    );
+                  }
                 }}
                 required
               >
@@ -283,7 +306,7 @@ const CourseRegistrationModal = ({
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-semibold text-white">
-                  Create New Course
+                  {title}
                 </h2>
                 <p className="text-sm text-gray-400 mt-1">
                   Step {activeStep} of {steps.length}
@@ -356,9 +379,10 @@ const CourseRegistrationModal = ({
                 ) : (
                   <button
                     onClick={handleSubmit}
-                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200"
+                    disabled={isSubmitting}
+                    className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors duration-200 disabled:opacity-50"
                   >
-                    Create Course
+                    {isSubmitting ? "Saving..." : submitLabel}
                   </button>
                 )}
                 <button

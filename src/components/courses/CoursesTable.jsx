@@ -27,8 +27,8 @@ const CoursesTable = ({ updateCourseStats }) => {
   const [registerCourseId, setRegistrationUserId] = useState(false);
   const [editingCourseId, setEditingCourseId] = useState(null);
   const [editValues, setEditValues] = useState({});
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [popUpState, setPopUpState] = useState(false);
-  const editRowRef = useRef(null);
   const confirmButtonRef = useRef(null);
   const coursesPerPage = 10;
   const [viewingCourse, setViewingCourse] = useState(null);
@@ -111,27 +111,22 @@ const CoursesTable = ({ updateCourseStats }) => {
   // Close modal
   const handleCloseModal = () => {
     setRegistrationUserId(false);
+    setEditingCourseId(null);
+    setIsSavingEdit(false);
     setEditValues({});
   };
 
   // Confirm Registration
-  const handleConfirmRegistration = async (
-    coverImage,
-    teacherFirstName,
-    teacherLastName,
-    title,
-    description,
-    level
-  ) => {
+  const handleConfirmRegistration = async () => {
     try {
       const updatedCourses = await runWithLoader(async () => {
         await CreateCourse(
-          coverImage,
-          teacherFirstName,
-          teacherLastName,
-          title,
-          description,
-          level
+          editValues.coverImage,
+          editValues.teacherFirstName,
+          editValues.teacherLastName,
+          editValues.title,
+          editValues.description,
+          editValues.level
         );
         return GetCourses();
       });
@@ -139,6 +134,7 @@ const CoursesTable = ({ updateCourseStats }) => {
       setFilteredCourses(updatedCourses ?? []);
       updateCourseStats(updatedCourses ?? []);
       setRegistrationUserId(false);
+      setEditValues({});
     } catch (error) {
       console.error("Error creating course:", error);
     }
@@ -148,11 +144,13 @@ const CoursesTable = ({ updateCourseStats }) => {
   const handleEditClick = (course) => {
     setEditingCourseId(course.id);
     setEditValues({
-      title: course.title,
-      description: course.description,
-      level: course.level,
+      title: course.title ?? "",
+      description: course.description ?? "",
+      level: course.level ?? "",
       teacherFirstName: course.teacher?.firstName ?? "",
       teacherLastName: course.teacher?.lastName ?? "",
+      coverImage: null,
+      coverImageUrl: course.course_cover_url || null,
     });
   };
 
@@ -170,11 +168,13 @@ const CoursesTable = ({ updateCourseStats }) => {
   };
 
   // Confirm Edits
-  const handleConfirmEdit = async (courseId) => {
+  const handleConfirmEdit = async () => {
+    if (!editingCourseId) return;
     try {
+      setIsSavingEdit(true);
       const updatedCourses = await runWithLoader(async () => {
         await editCourse(
-          courseId,
+          editingCourseId,
           editValues.title,
           editValues.description,
           editValues.level,
@@ -187,8 +187,11 @@ const CoursesTable = ({ updateCourseStats }) => {
       setFilteredCourses(updatedCourses ?? []);
       updateCourseStats(updatedCourses ?? []);
       setEditingCourseId(null);
+      setEditValues({});
     } catch (error) {
       console.error("Error editing course:", error);
+    } finally {
+      setIsSavingEdit(false);
     }
   };
 
@@ -359,16 +362,22 @@ const CoursesTable = ({ updateCourseStats }) => {
             </div>
           </div>
 
-          {/* Registration Modal */}
+          {/* Registration / Edit Modal */}
           <AnimatePresence>
-            {registerCourseId && (
+            {(registerCourseId || editingCourseId) && (
               <CourseRegistrationModal
                 onClose={handleCloseModal}
-                onRegister={handleConfirmRegistration}
+                onRegister={
+                  editingCourseId ? handleConfirmEdit : handleConfirmRegistration
+                }
                 editValues={editValues}
                 handleInputChange={handleInputChange}
                 setEditValues={setEditValues}
                 allTeachers={allTeachers}
+                title={editingCourseId ? "Edit course" : "Create New Course"}
+                submitLabel={editingCourseId ? "Save changes" : "Create Course"}
+                isEdit={Boolean(editingCourseId)}
+                isSubmitting={isSavingEdit}
               />
             )}
           </AnimatePresence>
@@ -414,60 +423,11 @@ const CoursesTable = ({ updateCourseStats }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
-                    ref={editingCourseId === course.id ? editRowRef : null}
                   >
                     {["title", "level", "active", "teacher"].map(
                       (field) => (
                         <td key={field} className="px-6 py-4 whitespace-nowrap">
-                          {editingCourseId === course.id ? (
-                            field === "teacher" ? (
-                              <select
-                                value={`${editValues.teacherFirstName} ${editValues.teacherLastName}`}
-                                onChange={(e) => {
-                                  const selectedTeacher = allTeachers.find(
-                                    (t) =>
-                                      `${t.firstName ?? ""} ${t.lastName ?? ""}`.trim() ===
-                                      e.target.value
-                                  );
-                                  if (selectedTeacher) {
-                                    handleInputChange(
-                                      e,
-                                      "teacher",
-                                      selectedTeacher.firstName ?? "",
-                                      selectedTeacher.lastName ?? ""
-                                    );
-                                  }
-                                }}
-                                className="block w-full p-2 rounded-md bg-gray-800 text-white"
-                              >
-                                {allTeachers.map((teacher) => (
-                                  <option
-                                    key={teacher.id}
-                                    value={`${teacher.firstName} ${teacher.lastName}`}
-                                  >
-                                    {`${teacher.firstName} ${teacher.lastName}`}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : field === "active" ? (
-                              <span
-                                className={`text-xs px-2 py-1 rounded-full ${
-                                  course.active
-                                    ? "bg-green-900 text-green-300"
-                                    : "bg-gray-700 text-gray-300"
-                                }`}
-                              >
-                                {course.active ? "Active" : "Inactive"}
-                              </span>
-                            ) : (
-                              <input
-                                type="text"
-                                defaultValue={course[field]}
-                                onChange={(e) => handleInputChange(e, field)}
-                                className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
-                              />
-                            )
-                          ) : field === "teacher" ? (
+                          {field === "teacher" ? (
                             <div className="text-sm font-medium text-gray-100">
                               {course.teacher
                                 ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim() || "—"
@@ -497,15 +457,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-300">
-                      {editingCourseId === course.id ? (
-                        <button
-                          onClick={() => handleConfirmEdit(course.id)}
-                          ref={confirmButtonRef}
-                          className="text-green-400 hover:text-green-300"
-                        >
-                          <Check size={18} />
-                        </button>
-                      ) : deletingCourseId === course.id ? (
+                      {deletingCourseId === course.id ? (
                         <button
                           onClick={() => handleConfirmDelete(course.id)}
                           ref={confirmButtonRef}
