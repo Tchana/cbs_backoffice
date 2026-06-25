@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Edit, Search, Trash2, Check, Plus, X, Eye, RefreshCw } from "lucide-react";
+import { Edit, Search, Trash2, Check, Plus, Eye, RefreshCw } from "lucide-react";
 import { CreateLesson, EditLesson, DeleteLesson } from "../../services/LessonManagement";
 import { GetCourses } from "../../services/CourseManagement";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
 import LessonViewModal from "./LessonViewModal";
+import LessonFormModal from "./LessonFormModal";
 
 const TRUNCATED_COLUMN = "max-w-[200px]";
 
@@ -20,18 +21,16 @@ const LessonsTable = ({ updateLessonsStats }) => {
   const [registerLessonId, setRegistrationLessonId] = useState(false);
   const [editingLessonId, setEditingLessonId] = useState(null);
   const [viewingLesson, setViewingLesson] = useState(null);
-  const [selectedValues, setSelectedValues] = useState({});
-  const editRowRef = useRef(null);
+  const [formValues, setFormValues] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
   const confirmButtonRef = useRef(null);
   const lessonsPerPage = 10;
 
-  // Refresh data function
   const refreshData = async () => {
     const newLessons = await fetchLessons();
     if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
   };
 
-  // Fetch lessons from all courses; returns the lessons array for callers
   const fetchLessons = async () => {
     try {
       const courses = await runWithLoader(() => GetCourses());
@@ -56,7 +55,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
     fetchLessons();
   }, []);
 
-  // Search functionality
   useEffect(() => {
     if (!searchTerm) {
       setFilteredLessons(lessonsList);
@@ -69,65 +67,67 @@ const LessonsTable = ({ updateLessonsStats }) => {
       );
       setFilteredLessons(filtered);
     }
-    setCurrentPage(1); // Reset to first page when searching
+    setCurrentPage(1);
   }, [searchTerm, lessonsList]);
 
   const handleSearch = (e) => {
     setSearchTerm(e.target.value.toLowerCase());
   };
 
-  // Start registering
   const handleRegistrationClick = () => {
     setRegistrationLessonId(true);
-    setSelectedValues({
-      course: "Select a Course",
+    setFormValues({
+      course: "",
       title: "",
       description: "",
-      file: "",
+      file: null,
     });
   };
 
-  // Close modal
   const handleCloseModal = () => {
     setRegistrationLessonId(false);
-    setSelectedValues({});
+    setEditingLessonId(null);
+    setIsSaving(false);
+    setFormValues({});
   };
 
-  // Confirm Registration
   const handleConfirmRegistration = async () => {
+    if (!formValues.course) {
+      alert("Please select a course.");
+      return;
+    }
     try {
-      if (selectedValues.course === "Select a Course") {
-        throw new Error("Please select a course");
-      }
-
+      setIsSaving(true);
       await runWithLoader(() =>
         CreateLesson(
-          selectedValues.course,
-          selectedValues.title,
-          selectedValues.description,
-          selectedValues.file || ""
+          formValues.course,
+          formValues.title,
+          formValues.description,
+          formValues.file || null
         )
       );
       const newLessons = await fetchLessons();
       if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
-      setRegistrationLessonId(false);
+      handleCloseModal();
     } catch (error) {
       console.error("Error Creating Lesson:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Start Editing
   const handleEditClick = (lesson) => {
     setEditingLessonId(lesson.id);
-    setSelectedValues({
+    setFormValues({
       course: lesson.courseId,
-      title: lesson.title,
-      description: lesson.description,
-      file: lesson.file,
+      courseTitle: lesson.courseTitle,
+      title: lesson.title ?? "",
+      description: lesson.description ?? "",
+      file: lesson.file || null,
+      fileUrl: lesson.file || lesson.file_url || null,
     });
   };
 
-  // Handle Input Changes
   const handleInputChange = (e, field) => {
     if (field === "file") {
       const file = e.target.files?.[0];
@@ -139,37 +139,42 @@ const LessonsTable = ({ updateLessonsStats }) => {
         e.target.value = "";
         return;
       }
-      setSelectedValues({ ...selectedValues, [field]: file });
+      setFormValues((prev) => ({ ...prev, [field]: file }));
+    } else if (field === "course") {
+      setFormValues((prev) => ({ ...prev, course: e.target.value }));
     } else {
-      setSelectedValues({ ...selectedValues, [field]: e.target.value });
+      setFormValues((prev) => ({ ...prev, [field]: e.target.value }));
     }
   };
 
-  // Confirm Edits
-  const handleConfirmEdit = async (lessonId) => {
+  const handleConfirmEdit = async () => {
+    if (!editingLessonId) return;
     try {
+      setIsSaving(true);
+      const fileToUpload =
+        formValues.file instanceof File ? formValues.file : null;
       await runWithLoader(() =>
         EditLesson(
-          lessonId,
-          selectedValues.title,
-          selectedValues.description,
-          selectedValues.file
+          editingLessonId,
+          formValues.title,
+          formValues.description,
+          fileToUpload
         )
       );
       const newLessons = await fetchLessons();
       if (typeof updateLessonsStats === "function") updateLessonsStats(newLessons);
-      setEditingLessonId(null);
+      handleCloseModal();
     } catch (error) {
       console.error("Error updating lesson:", error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  // Start Deleting
   const handleDeleteClick = (lesson) => {
     setDeletingLessonId(lesson.id);
   };
 
-  // Confirm Delete
   const handleConfirmDelete = async (lessonId) => {
     try {
       await runWithLoader(() => DeleteLesson(lessonId));
@@ -182,12 +187,10 @@ const LessonsTable = ({ updateLessonsStats }) => {
     setDeletingLessonId(null);
   };
 
-  // Compute paginated lessons
   const indexOfLastLesson = currentPage * lessonsPerPage;
   const indexOfFirstLesson = indexOfLastLesson - lessonsPerPage;
   const paginatedLessons = filteredLessons.slice(indexOfFirstLesson, indexOfLastLesson);
 
-  // Pagination
   const totalPages = Math.ceil(filteredLessons.length / lessonsPerPage);
 
   const handleNextPage = () => {
@@ -202,7 +205,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
     }
   };
 
-  // Go to Page Functionality
   const handlePageInputChange = (e) => {
     setPageInput(e.target.value);
   };
@@ -230,7 +232,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: 0.2 }}
     >
-      {/* Header with Search Bar */}
       <div className="flex justify-between items-center mb-6">
         <div className="relative">
           <input
@@ -242,83 +243,40 @@ const LessonsTable = ({ updateLessonsStats }) => {
           />
           <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
         </div>
-        {!registerLessonId && (
-          <div className="flex gap-2">
-            <button
-              onClick={refreshData}
-              className="text-green-400 hover:text-green-300"
-              title="Refresh data"
-            >
-              <RefreshCw size={24} />
-            </button>
-            <button
-              onClick={handleRegistrationClick}
-              className="text-indigo-400 hover:text-indigo-300"
-            >
-              <Plus size={30} />
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Registration Form */}
-      {registerLessonId && (
-        <div className="bg-gray-700 p-4 rounded-md space-y-3 flex flex-col">
+        <div className="flex gap-2">
           <button
-            className="absolute top-10 right-9 text-red-500 hover:text-red-700"
-            onClick={handleCloseModal} // Cancel registration
+            onClick={refreshData}
+            className="text-green-400 hover:text-green-300"
+            title="Refresh data"
           >
-            <X size={24} />
+            <RefreshCw size={24} />
           </button>
-
-          <select
-            value={selectedValues.course}
-            onChange={(e) => {
-              const selectedCourse = allCourses.find(
-                (course) => course.title === e.target.value
-              );
-              setSelectedValues({
-                ...selectedValues,
-                course: selectedCourse.id,
-              });
-            }}
-            className="block w-full p-2 rounded-md bg-gray-800 text-white"
-          >
-            {allCourses.map((course) => (
-              <option key={course.id} value={`${course.title}`}>
-                {`${course.title}`}
-              </option>
-            ))}
-          </select>
-          <input
-            type="text"
-            placeholder="Lesson Title"
-            className="block w-full mb-3 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "title")}
-          />
-          <input
-            type="text"
-            placeholder="Description"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "description")}
-          />
-
-          <input
-            type="file"
-            placeholder="File"
-            accept=".pdf,application/pdf"
-            className="block w-full mb-2 p-2 rounded-md bg-gray-800 text-white"
-            onChange={(e) => handleInputChange(e, "file")}
-          />
-
           <button
-            onClick={handleConfirmRegistration}
-            className="bg-green-500 px-4 py-2 rounded-md text-white"
+            onClick={handleRegistrationClick}
+            className="text-indigo-400 hover:text-indigo-300"
           >
-            Create Lesson
+            <Plus size={30} />
           </button>
         </div>
-      )}
+      </div>
+
+      <AnimatePresence>
+        {(registerLessonId || editingLessonId) && (
+          <LessonFormModal
+            onClose={handleCloseModal}
+            onSubmit={
+              editingLessonId ? handleConfirmEdit : handleConfirmRegistration
+            }
+            formValues={formValues}
+            handleInputChange={handleInputChange}
+            allCourses={allCourses}
+            title={editingLessonId ? "Edit lesson" : "Create lesson"}
+            submitLabel={editingLessonId ? "Save changes" : "Create lesson"}
+            isEdit={Boolean(editingLessonId)}
+            isSubmitting={isSaving}
+          />
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {viewingLesson && (
@@ -326,7 +284,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
         )}
       </AnimatePresence>
 
-      {/* Table */}
       <div className="overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
@@ -354,7 +311,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.3 }}
-                ref={editingLessonId === lesson.id ? editRowRef : null}
               >
                 {["title", "description", "courseTitle"].map((field) => {
                   const isTruncated = field === "title" || field === "description";
@@ -363,34 +319,17 @@ const LessonsTable = ({ updateLessonsStats }) => {
                       key={field}
                       className={`px-6 py-4 ${isTruncated ? `${TRUNCATED_COLUMN} truncate` : "whitespace-nowrap"}`}
                     >
-                      {editingLessonId === lesson.id ? (
-                        <input
-                          type="text"
-                          defaultValue={lesson[field]}
-                          onChange={(e) => handleInputChange(e, field)}
-                          className="bg-gray-700 text-white rounded-lg px-2 py-1 w-full outline-none"
-                        />
-                      ) : (
-                        <div
-                          className={`text-sm font-medium text-gray-100 ${isTruncated ? "truncate" : ""}`}
-                          title={isTruncated ? lesson[field] : undefined}
-                        >
-                          {lesson[field]}
-                        </div>
-                      )}
+                      <div
+                        className={`text-sm font-medium text-gray-100 ${isTruncated ? "truncate" : ""}`}
+                        title={isTruncated ? lesson[field] : undefined}
+                      >
+                        {lesson[field]}
+                      </div>
                     </td>
                   );
                 })}
                 <td className="px-6 py-4 text-sm text-gray-300">
-                  {editingLessonId === lesson.id ? (
-                    <button
-                      onClick={() => handleConfirmEdit(lesson.id)}
-                      ref={confirmButtonRef}
-                      className="text-green-400 hover:text-green-300"
-                    >
-                      <Check size={18} />
-                    </button>
-                  ) : deletingLessonId === lesson.id ? (
+                  {deletingLessonId === lesson.id ? (
                     <button
                       onClick={() => handleConfirmDelete(lesson.id)}
                       ref={confirmButtonRef}
@@ -410,12 +349,14 @@ const LessonsTable = ({ updateLessonsStats }) => {
                       <button
                         onClick={() => handleEditClick(lesson)}
                         className="text-indigo-400 hover:text-indigo-300 mr-2"
+                        title="Edit lesson"
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => handleDeleteClick(lesson)}
                         className="text-red-400 hover:text-red-300"
+                        title="Delete lesson"
                       >
                         <Trash2 size={18} />
                       </button>
@@ -428,7 +369,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
         </table>
       </div>
 
-      {/* Pagination Controls */}
       <div className="flex justify-between items-center mt-6">
         <button
           onClick={handlePrevPage}
@@ -457,7 +397,6 @@ const LessonsTable = ({ updateLessonsStats }) => {
         </button>
       </div>
 
-      {/* Go to Page Functionality */}
       <div className="flex justify-center items-center mt-4">
         <span className="text-gray-300 mr-2">Go to page:</span>
         <input
