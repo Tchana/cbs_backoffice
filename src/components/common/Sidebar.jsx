@@ -5,7 +5,6 @@ import {
   BookOpen,
   Menu,
   Settings,
-  ShoppingCart,
   TrendingUp,
   Users,
   UserCircle,
@@ -17,58 +16,53 @@ import {
   ,
   MessageSquare
   ,
-  Wallet,
-  ChevronDown
+  ChevronDown,
+  Wallet
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { isAdmin } from "../../lib/auth";
 
-const SIDEBAR_ITEMS = [];
-if (isAdmin()) {
-  SIDEBAR_ITEMS.push(
-    { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
-    { name: "Admin", icon: Users, color: "#EC4899", href: "/admin" },
-    { name: "Users", icon: Users, color: "#EC48FC", href: "/users" },
-    { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
-    { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
-    { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
-    { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
-    { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
-    { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
-    { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
-    { name: "Finance", icon: Wallet, color: "#22C55E", href: "/finance" },
-    { name: "Subscriptions", icon: ShoppingCart, color: "#A78BFA", href: "/subscriptions" },
-    {
-      name: "Account Info",
-      icon: UserCircle,
-      color: "#6366f1",
-      href: "/account-info",
-    }
-  );
-} else {
-  SIDEBAR_ITEMS.push(
-    { name: "Users", icon: Users, color: "#EC48FC", href: "/users" },
-    { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
-    { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
-    { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
-    { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
-    { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
-    { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
-    { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
-    { name: "Finance", icon: Wallet, color: "#22C55E", href: "/finance" },
-    { name: "Subscriptions", icon: ShoppingCart, color: "#A78BFA", href: "/subscriptions" },
-    {
-      name: "Account Info",
-      icon: UserCircle,
-      color: "#6366f1",
-      href: "/account-info",
-    }
-  );
-}
+const ADMIN_SIDEBAR_ITEMS = [
+  { name: "Overview", icon: BarChart2, color: "#6366f1", href: "/overview" },
+  { name: "Admin", icon: Users, color: "#EC4899", href: "/admin" },
+  { name: "Users", icon: Users, color: "#EC48FC", href: "/users" },
+  { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
+  { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+  { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
+  { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+  { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
+  { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
+  { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
+  { name: "Finance", icon: Wallet, color: "#10B981", href: "/finance" },
+  {
+    name: "Account Info",
+    icon: UserCircle,
+    color: "#6366f1",
+    href: "/account-info",
+  },
+];
+
+const TEACHER_SIDEBAR_ITEMS = [
+  { name: "Users", icon: Users, color: "#EC48FC", href: "/users" },
+  { name: "Teachers", icon: Users, color: "#EC8899", href: "/teachers" },
+  { name: "Courses", icon: BookCopyIcon, color: "#8B5CF6", href: "/course" },
+  { name: "Lessons", icon: BookOpenCheck, color: "#8B5CF6", href: "/lessons" },
+  { name: "Books", icon: Book, color: "#F59E0B", href: "/books" },
+  { name: "Blogs", icon: FileText, color: "#10B981", href: "/blogs" },
+  { name: "Announcements", icon: Bell, color: "#F59E0B", href: "/announcements" },
+  { name: "Forum", icon: MessageSquare, color: "#06B6D4", href: "/forum" },
+  {
+    name: "Account Info",
+    icon: UserCircle,
+    color: "#6366f1",
+    href: "/account-info",
+  },
+];
 
 const Sidebar = () => {
+  const sidebarItems = isAdmin() ? ADMIN_SIDEBAR_ITEMS : TEACHER_SIDEBAR_ITEMS;
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isScrolling, setIsScrolling] = useState(false);
   const [canScrollDown, setCanScrollDown] = useState(false);
@@ -131,7 +125,7 @@ const Sidebar = () => {
               isScrolling ? "scrollbar-visible" : ""
             }`}
           >
-            {SIDEBAR_ITEMS.map((item) => (
+            {sidebarItems.map((item) => (
               <Link key={item.href} to={item.href}>
                 <motion.div className="flex items-center p-4 text-sm font-medium rounded-lg hover:bg-gray-700 transition-colors mb-2">
                   <item.icon

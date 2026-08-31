@@ -194,7 +194,6 @@ const BookRegistrationModal = ({
                   className="w-full rounded-lg bg-gray-700 px-4 py-2.5 text-white focus:outline-none focus:ring-2 focus:ring-amber-500/60"
                 >
                   <option value="public">Public (everyone)</option>
-                  <option value="subscriber">Subscriber only</option>
                 </select>
               </div>
 

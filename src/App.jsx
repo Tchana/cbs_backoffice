@@ -12,9 +12,9 @@ import BooksPage from "./pages/BooksPage";
 import BlogsPage from "./pages/BlogsPage";
 import AnnouncementsPage from "./pages/AnnouncementsPage";
 import ForumPage from "./pages/ForumPage";
-import FinancePage from "./pages/FinancePage";
 import LessonsPage from "./pages/LessonsPage";
-import SubscriptionsPage from "./pages/SubscriptionsPage";
+import FinancePage from "./pages/FinancePage";
+import AdminRoute from "./components/common/AdminRoute";
 import AuthPage from "./components/authentication/LoginSignup";
 import AccountInfoPage from "./pages/AccountInfoPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
@@ -42,8 +42,14 @@ const AuthenticatedLayout = () => (
         <Route path="/blogs" element={<BlogsPage />} />
         <Route path="/announcements" element={<AnnouncementsPage />} />
         <Route path="/forum" element={<ForumPage />} />
-        <Route path="/finance" element={<FinancePage />} />
-        <Route path="/subscriptions" element={<SubscriptionsPage />} />
+        <Route
+          path="/finance"
+          element={
+            <AdminRoute>
+              <FinancePage />
+            </AdminRoute>
+          }
+        />
         <Route path="/account-info" element={<AccountInfoPage />} />
       </Routes>
     </div>

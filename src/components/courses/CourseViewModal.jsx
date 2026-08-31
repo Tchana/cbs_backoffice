@@ -15,18 +15,21 @@ import {
   DeleteLesson,
   EditLesson,
 } from "../../services/LessonManagement";
+import {
+  addCourseComment,
+  deleteCourseComment,
+  getCourseComments,
+} from "../../services/CourseContentManagement";
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useApiLoader } from "../../contexts/ApiLoaderContext";
+import RichTextDisplay from "../common/RichTextDisplay";
+import LessonResourcesEditor from "./LessonResourcesEditor";
 import {
   DeleteAssignment,
   GetAssignmentsByCourse,
   UpdateAssignment,
 } from "../../services/AssignmentManagement";
-import {
-  DeleteCourseFee,
-  UpsertCourseFee,
-} from "../../services/CourseFeeManagement";
 import AssignmentCreateModal from "../assignments/AssignmentCreateModal";
 import AssignmentGradeModal from "../assignments/AssignmentGradeModal";
 
@@ -37,7 +40,7 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const [isCreatingLesson, setIsCreatingLesson] = useState(false);
   const [lessonTitle, setLessonTitle] = useState("");
   const [lessonDescription, setLessonDescription] = useState("");
-  const [lessonFile, setLessonFile] = useState(null);
+  const [lessonResources, setLessonResources] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [expandedLessonId, setExpandedLessonId] = useState(null);
   const [lessonToDelete, setLessonToDelete] = useState(null);
@@ -45,19 +48,19 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   const [editingLesson, setEditingLesson] = useState(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDescription, setEditDescription] = useState("");
-  const [editFile, setEditFile] = useState(null);
+  const [editResources, setEditResources] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [editError, setEditError] = useState("");
+
+  const [comments, setComments] = useState([]);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [isLoadingComments, setIsLoadingComments] = useState(false);
 
   const [assignments, setAssignments] = useState([]);
   const [isLoadingAssignments, setIsLoadingAssignments] = useState(false);
   const [isCreatingAssignment, setIsCreatingAssignment] = useState(false);
   const [assignmentToGrade, setAssignmentToGrade] = useState(null);
   const [dueDateDraftById, setDueDateDraftById] = useState({});
-  const [feeAmount, setFeeAmount] = useState("");
-  const [feeNotes, setFeeNotes] = useState("");
-  const [feeSaving, setFeeSaving] = useState(false);
-  const [feeError, setFeeError] = useState("");
 
   const reloadAssignments = async () => {
     try {
@@ -92,45 +95,40 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
   useEffect(() => {
     if (!course?.id) return;
     reloadAssignments();
-    const fee = course.courseFee;
-    setFeeAmount(fee?.amount ? String(fee.amount) : "");
-    setFeeNotes(fee?.notes || "");
-    setFeeError("");
+    reloadComments();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [course?.id, course?.courseFee?.amount]);
+  }, [course?.id]);
 
-  const handleSaveCourseFee = async () => {
-    setFeeError("");
-    setFeeSaving(true);
+  const reloadComments = async () => {
     try {
-      await runWithLoader(() =>
-        UpsertCourseFee({
-          courseId: course.id,
-          amount: feeAmount,
-          notes: feeNotes,
-        })
-      );
-      onLessonChange?.();
+      setIsLoadingComments(true);
+      const res = await getCourseComments(course.id);
+      setComments(res || []);
     } catch (e) {
-      setFeeError(e.message || "Failed to save course fee.");
+      console.error("Error loading comments:", e);
     } finally {
-      setFeeSaving(false);
+      setIsLoadingComments(false);
     }
   };
 
-  const handleRemoveCourseFee = async () => {
-    if (!window.confirm("Remove the catalog fee for this course?")) return;
-    setFeeError("");
-    setFeeSaving(true);
+  const handleAddComment = async () => {
+    const content = commentDraft.trim();
+    if (!content) return;
     try {
-      await runWithLoader(() => DeleteCourseFee(course.id));
-      setFeeAmount("");
-      setFeeNotes("");
-      onLessonChange?.();
+      await runWithLoader(() => addCourseComment(course.id, content));
+      setCommentDraft("");
+      await reloadComments();
     } catch (e) {
-      setFeeError(e.message || "Failed to remove course fee.");
-    } finally {
-      setFeeSaving(false);
+      console.error("Error adding comment:", e);
+    }
+  };
+
+  const handleDeleteComment = async (commentId) => {
+    try {
+      await runWithLoader(() => deleteCourseComment(commentId));
+      await reloadComments();
+    } catch (e) {
+      console.error("Error deleting comment:", e);
     }
   };
 
@@ -139,11 +137,11 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
     setIsLoading(true);
     try {
       await runWithLoader(() =>
-        CreateLesson(course.id, lessonTitle, lessonDescription, lessonFile)
+        CreateLesson(course.id, lessonTitle, lessonDescription, lessonResources)
       );
       setLessonTitle("");
       setLessonDescription("");
-      setLessonFile(null);
+      setLessonResources([]);
       setIsCreatingLesson(false);
       onLessonChange?.();
     } catch (error) {
@@ -183,13 +181,13 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
           lessonId,
           editTitle || undefined,
           editDescription || undefined,
-          editFile || undefined
+          editResources
         )
       );
       setEditingLesson(null);
       setEditTitle("");
       setEditDescription("");
-      setEditFile(null);
+      setEditResources([]);
       onLessonChange?.();
     } catch (error) {
       console.error("Error editing lesson:", error);
@@ -203,7 +201,16 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
     setEditingLesson(lesson);
     setEditTitle(lesson.title);
     setEditDescription(lesson.description || "");
-    setEditFile(null);
+    setEditResources(
+      (lesson.resources || []).map((r) => ({
+        id: r.id || crypto.randomUUID(),
+        resourceType: r.resourceType || r.resource_type,
+        title: r.title || "",
+        url: r.url || "",
+        sourceKind: r.sourceKind || r.source_kind || "external",
+        file: null,
+      }))
+    );
     setEditError("");
   };
 
@@ -290,65 +297,12 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
             {/* Course Details */}
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-gray-400 text-sm">Level</label>
-                <p className="text-white font-medium capitalize">
-                  {course.level}
-                </p>
-              </div>
-              <div className="col-span-2 rounded-lg border border-gray-700 bg-gray-900/40 p-4 space-y-3">
-                <label className="text-gray-400 text-sm block">Course fee (catalog)</label>
-                <p className="text-xs text-gray-500">
-                  Set in Finance → Course fees, or here. Used as the suggested amount for
-                  student payments.
-                </p>
-                <div className="flex flex-wrap gap-2 items-end">
-                  <input
-                    type="number"
-                    min="1"
-                    value={feeAmount}
-                    onChange={(e) => setFeeAmount(e.target.value)}
-                    placeholder="Amount (XAF)"
-                    className="w-36 rounded-md bg-gray-700 px-3 py-2 text-white text-sm"
-                  />
-                  <input
-                    type="text"
-                    value={feeNotes}
-                    onChange={(e) => setFeeNotes(e.target.value)}
-                    placeholder="Notes (optional)"
-                    className="flex-1 min-w-[160px] rounded-md bg-gray-700 px-3 py-2 text-white text-sm"
-                  />
-                  <button
-                    type="button"
-                    disabled={feeSaving || !feeAmount}
-                    onClick={handleSaveCourseFee}
-                    className="rounded-md bg-indigo-600 px-3 py-2 text-xs text-white hover:bg-indigo-500 disabled:opacity-40"
-                  >
-                    {course.courseFee ? "Update fee" : "Add fee"}
-                  </button>
-                  {course.courseFee && (
-                    <button
-                      type="button"
-                      disabled={feeSaving}
-                      onClick={handleRemoveCourseFee}
-                      className="rounded-md bg-red-900/50 px-3 py-2 text-xs text-red-200 hover:bg-red-800/50 disabled:opacity-40"
-                    >
-                      Remove
-                    </button>
-                  )}
-                </div>
-                {feeError && <p className="text-xs text-red-400">{feeError}</p>}
-              </div>
-              <div>
                 <label className="text-gray-400 text-sm">Teacher</label>
                 <p className="text-white font-medium">
                   {course.teacher
                     ? `${course.teacher.firstName ?? ""} ${course.teacher.lastName ?? ""}`.trim() || "—"
                     : "—"}
                 </p>
-              </div>
-              <div className="col-span-2">
-                <label className="text-gray-400 text-sm">Description</label>
-                <p className="text-white font-medium">{course.description}</p>
               </div>
               <div>
                 <label className="text-gray-400 text-sm">Status</label>
@@ -360,6 +314,37 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                   {course.active ? "Active" : "Inactive"}
                 </p>
               </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Description</label>
+                <p className="text-white font-medium whitespace-pre-wrap">
+                  {course.description}
+                </p>
+              </div>
+              <div className="col-span-2">
+                <label className="text-gray-400 text-sm">Learning Objectives</label>
+                <RichTextDisplay
+                  value={course.learningObjectives}
+                  emptyLabel="No learning objectives set"
+                />
+              </div>
+              {course.overviewVideos?.length > 0 && (
+                <div className="col-span-2">
+                  <label className="text-gray-400 text-sm">Overview Videos</label>
+                  <div className="mt-2 space-y-2">
+                    {course.overviewVideos.map((video) => (
+                      <a
+                        key={video.id}
+                        href={video.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block text-indigo-400 hover:text-indigo-300 text-sm"
+                      >
+                        {video.title || video.url}
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div>
                 <label className="text-gray-400 text-sm">Created At</label>
                 <p className="text-white font-medium">
@@ -427,13 +412,11 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Lesson File
+                      Resources
                     </label>
-                    <input
-                      type="file"
-                      onChange={(e) => setLessonFile(e.target.files[0])}
-                      className="w-full px-3 py-2 bg-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                      required
+                    <LessonResourcesEditor
+                      resources={lessonResources}
+                      onChange={setLessonResources}
                     />
                   </div>
                   <div className="flex justify-end space-x-3">
@@ -484,17 +467,10 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            {lesson.file && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleFileOpen(lesson.file);
-                                }}
-                                className="p-1 text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
-                                title="Open lesson file"
-                              >
-                                <FileText size={18} />
-                              </button>
+                            {(lesson.resources?.length > 0 || lesson.file) && (
+                              <span className="text-xs text-gray-400">
+                                {lesson.resources?.length || (lesson.file ? 1 : 0)} resource(s)
+                              </span>
                             )}
                             <button
                               onClick={(e) => {
@@ -543,6 +519,31 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                                 {lesson.description ||
                                   "No description available"}
                               </p>
+                              {(lesson.resources?.length > 0 || lesson.file) && (
+                                <div className="mt-4">
+                                  <h4 className="text-sm font-medium text-gray-300 mb-2">
+                                    Resources
+                                  </h4>
+                                  <ul className="space-y-1">
+                                    {(lesson.resources?.length
+                                      ? lesson.resources
+                                      : lesson.file
+                                        ? [{ title: "PDF", url: lesson.file, resourceType: "pdf" }]
+                                        : []
+                                    ).map((r) => (
+                                      <li key={r.id || r.url}>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleFileOpen(r.url)}
+                                          className="text-indigo-400 hover:text-indigo-300 text-sm"
+                                        >
+                                          {r.title || r.resourceType || "Resource"} — Open
+                                        </button>
+                                      </li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
                             </div>
                           </motion.div>
                         )}
@@ -558,13 +559,60 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
             </div>
 
             <div className="pt-6 border-t border-gray-700">
-              <p className="text-gray-400 text-sm">
-                Students with an active school subscription at level{" "}
-                <span className="text-white font-medium">
-                  {course.level || "—"}
-                </span>{" "}
-                or higher can access this course when it is marked active.
-              </p>
+              <h3 className="text-lg font-medium text-white mb-4">Discussion</h3>
+              {isLoadingComments ? (
+                <p className="text-gray-400 text-sm">Loading comments...</p>
+              ) : (
+                <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
+                  {comments.length === 0 ? (
+                    <p className="text-gray-400 text-sm italic">No comments yet.</p>
+                  ) : (
+                    comments.map((c) => (
+                      <div key={c.id} className="bg-gray-700 rounded-lg p-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <p className="text-sm text-white font-medium">
+                            {c.authorName}
+                            {c.authorRole ? (
+                              <span className="text-gray-400 font-normal ml-2">
+                                ({c.authorRole})
+                              </span>
+                            ) : null}
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteComment(c.id)}
+                            className="text-red-400 hover:text-red-300 text-xs"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        <p className="text-gray-300 text-sm mt-1 whitespace-pre-wrap">
+                          {c.content}
+                        </p>
+                        <p className="text-gray-500 text-xs mt-1">
+                          {new Date(c.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <textarea
+                  value={commentDraft}
+                  onChange={(e) => setCommentDraft(e.target.value)}
+                  placeholder="Write a comment..."
+                  className="flex-1 px-3 py-2 bg-gray-700 text-white rounded-md text-sm"
+                  rows={2}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddComment}
+                  className="px-4 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600 self-end"
+                >
+                  Post
+                </button>
+              </div>
             </div>
           </div>
 
@@ -657,7 +705,6 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
           {isCreatingAssignment && (
             <AssignmentCreateModal
               course={course}
-              lessons={course.lessons || []}
               onClose={() => setIsCreatingAssignment(false)}
               onCreated={() => {
                 setIsCreatingAssignment(false);
@@ -756,13 +803,11 @@ const CourseViewModal = ({ course, onClose, onLessonChange }) => {
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1">
-                      Lesson File (Optional)
+                      Resources
                     </label>
-                    <input
-                      type="file"
-                      accept=".pdf,application/pdf"
-                      onChange={(e) => setEditFile(e.target.files[0])}
-                      className="w-full px-3 py-2 bg-gray-700 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    <LessonResourcesEditor
+                      resources={editResources}
+                      onChange={setEditResources}
                     />
                   </div>
                   {editError && (

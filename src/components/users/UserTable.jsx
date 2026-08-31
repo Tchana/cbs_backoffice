@@ -74,12 +74,6 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
       : activeTab === "library_user"
       ? "library_user"
       : "student";
-    const defaultSubscription =
-      defaultRole === "library_user"
-        ? "library_user"
-        : defaultRole === "student"
-        ? "student"
-        : "none";
     setRegistrationUserId(true);
     setEditValues({
       firstName: "",
@@ -87,8 +81,6 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
       email: "",
       password: "",
       role: defaultRole,
-      subscriptionType: defaultSubscription,
-      schoolMaxLevel: defaultRole === "student" ? 1 : 0,
     });
   };
 
@@ -129,9 +121,7 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
             undefined,
             editValues.role,
             undefined,
-            undefined,
-            editValues.subscriptionType,
-            editValues.schoolMaxLevel
+            undefined
           )
         );
       }
@@ -157,8 +147,6 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
       email: user.email,
       pImage: user.pImage || null,
       role: user.role,
-      subscriptionType: user.subscriptionType || "none",
-      schoolMaxLevel: user.schoolMaxLevel ?? 0,
     });
   };
 
@@ -168,54 +156,6 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
       setEditValues({ ...editValues, [field]: e.target.files[0] });
     } else {
       const value = e.target.value;
-      if (field === "role") {
-        let nextSubscription = editValues.subscriptionType || "none";
-        let nextSchoolMaxLevel = Number(editValues.schoolMaxLevel ?? 0);
-        if (value === "student") {
-          nextSubscription = "student";
-          if (!Number.isFinite(nextSchoolMaxLevel) || nextSchoolMaxLevel < 1) {
-            nextSchoolMaxLevel = 1;
-          }
-        } else if (value === "library_user") {
-          nextSubscription = "library_user";
-          nextSchoolMaxLevel = 0;
-        } else {
-          nextSubscription = "none";
-          nextSchoolMaxLevel = 0;
-        }
-        setEditValues({
-          ...editValues,
-          role: value,
-          subscriptionType: nextSubscription,
-          schoolMaxLevel: nextSchoolMaxLevel,
-        });
-        return;
-      }
-      if (field === "subscriptionType") {
-        let nextRole = editValues.role || "student";
-        let nextSchoolMaxLevel = Number(editValues.schoolMaxLevel ?? 0);
-        if (value === "student") {
-          nextRole = "student";
-          if (!Number.isFinite(nextSchoolMaxLevel) || nextSchoolMaxLevel < 1) {
-            nextSchoolMaxLevel = 1;
-          }
-        } else if (value === "library_user") {
-          nextRole = "library_user";
-          nextSchoolMaxLevel = 0;
-        } else if (value === "none") {
-          if (nextRole === "student" || nextRole === "library_user") {
-            nextRole = "teacher";
-          }
-          nextSchoolMaxLevel = 0;
-        }
-        setEditValues({
-          ...editValues,
-          subscriptionType: value,
-          role: nextRole,
-          schoolMaxLevel: nextSchoolMaxLevel,
-        });
-        return;
-      }
       setEditValues({ ...editValues, [field]: value });
     }
   };
@@ -234,9 +174,7 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
           editValues.lastName,
           editValues.role || "admin",
           undefined,
-          editValues.p_image || null,
-          editValues.subscriptionType,
-          editValues.schoolMaxLevel
+          editValues.p_image || null
         );
         return GetUsers();
       });
@@ -336,6 +274,32 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
     setViewingUser(null);
   };
 
+  const handleAccessUpdated = (updatedUser) => {
+    const updateList = (list) =>
+      list.map((u) => (u.id === updatedUser.id ? updatedUser : u));
+    setUsersList(updateList);
+    setFilteredUsers(updateList);
+    setViewingUser(updatedUser);
+  };
+
+  const getAccessLabel = (user) => {
+    if (user.role !== "student" && user.role !== "library_user") return "—";
+    const access = user.resourceAccess || "default";
+    return access.charAt(0).toUpperCase() + access.slice(1);
+  };
+
+  const getAccessBadgeClass = (user) => {
+    const access = user.resourceAccess || "default";
+    if (access === "granted") return "bg-green-900/50 text-green-300";
+    if (access === "denied") return "bg-red-900/50 text-red-300";
+    return "bg-gray-700 text-gray-300";
+  };
+
+  const showAccessColumn =
+    activeTab === "student" ||
+    activeTab === "library_user" ||
+    activeTab === "both";
+
   useEffect(() => {
     fetchUsers();
   }, [activeTab]); // Reload when tab changes
@@ -397,7 +361,11 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
       {/* View User Modal */}
       <AnimatePresence>
         {viewingUser && (
-          <UserViewModal user={viewingUser} onClose={handleCloseViewModal} />
+          <UserViewModal
+            user={viewingUser}
+            onClose={handleCloseViewModal}
+            onAccessUpdated={handleAccessUpdated}
+          />
         )}
       </AnimatePresence>
 
@@ -406,7 +374,14 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
         <table className="min-w-full divide-y divide-gray-700">
           <thead>
             <tr>
-              {["First Name", "Last Name", "Email", "Role", "Actions"].map(
+              {[
+                "First Name",
+                "Last Name",
+                "Email",
+                "Role",
+                ...(showAccessColumn ? ["Access"] : []),
+                "Actions",
+              ].map(
                 (heading) => (
                   <th
                     key={heading}
@@ -434,6 +409,15 @@ const UsersTable = ({ updateUserStats, activeTab = "both" }) => {
                     </div>
                   </td>
                 ))}
+                {showAccessColumn && (
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full ${getAccessBadgeClass(user)}`}
+                    >
+                      {getAccessLabel(user)}
+                    </span>
+                  </td>
+                )}
                 <td className="px-6 py-4 text-sm text-gray-300">
                   {deletingUserId === user.id ? (
                     <button

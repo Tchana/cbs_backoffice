@@ -80,7 +80,6 @@ const CoursesTable = ({ updateCourseStats }) => {
           return (
             course.title?.toLowerCase().includes(searchTerm) ||
             course.description?.toLowerCase().includes(searchTerm) ||
-            course.level?.toLowerCase().includes(searchTerm) ||
             teacherName.toLowerCase().includes(searchTerm)
           );
         }
@@ -102,9 +101,13 @@ const CoursesTable = ({ updateCourseStats }) => {
       coverImage: null,
       title: "",
       description: "",
-      level: "",
+      learningObjectives: "",
+      overviewVideos: [],
+      lessons: [],
+      teacherId: "",
       teacherFirstName: "",
       teacherLastName: "",
+      teacherEmail: "",
     });
   };
 
@@ -120,14 +123,15 @@ const CoursesTable = ({ updateCourseStats }) => {
   const handleConfirmRegistration = async () => {
     try {
       const updatedCourses = await runWithLoader(async () => {
-        await CreateCourse(
-          editValues.coverImage,
-          editValues.teacherFirstName,
-          editValues.teacherLastName,
-          editValues.title,
-          editValues.description,
-          editValues.level
-        );
+        await CreateCourse({
+          coverImage: editValues.coverImage,
+          teacherId: editValues.teacherId,
+          title: editValues.title,
+          description: editValues.description,
+          learningObjectives: editValues.learningObjectives,
+          overviewVideos: editValues.overviewVideos,
+          lessons: editValues.lessons,
+        });
         return GetCourses();
       });
       setCourseList(updatedCourses ?? []);
@@ -146,25 +150,21 @@ const CoursesTable = ({ updateCourseStats }) => {
     setEditValues({
       title: course.title ?? "",
       description: course.description ?? "",
-      level: course.level ?? "",
+      learningObjectives: course.learningObjectives ?? "",
+      overviewVideos: course.overviewVideos ?? [],
+      lessons: [],
+      teacherId: course.teacher_id ?? course.teacher?.id ?? "",
       teacherFirstName: course.teacher?.firstName ?? "",
       teacherLastName: course.teacher?.lastName ?? "",
+      teacherEmail: course.teacher?.email ?? "",
       coverImage: null,
       coverImageUrl: course.course_cover_url || null,
     });
   };
 
   // Handle Input Changes
-  const handleInputChange = (e, field, firstName = "", lastName = "") => {
-    if (field === "teacher") {
-      setEditValues((prev) => ({
-        ...prev,
-        teacherFirstName: firstName,
-        teacherLastName: lastName,
-      }));
-    } else {
-      setEditValues({ ...editValues, [field]: e.target.value });
-    }
+  const handleInputChange = (e, field) => {
+    setEditValues({ ...editValues, [field]: e.target.value });
   };
 
   // Confirm Edits
@@ -173,14 +173,14 @@ const CoursesTable = ({ updateCourseStats }) => {
     try {
       setIsSavingEdit(true);
       const updatedCourses = await runWithLoader(async () => {
-        await editCourse(
-          editingCourseId,
-          editValues.title,
-          editValues.description,
-          editValues.level,
-          editValues.teacherFirstName,
-          editValues.teacherLastName
-        );
+        await editCourse({
+          id: editingCourseId,
+          title: editValues.title,
+          description: editValues.description,
+          learningObjectives: editValues.learningObjectives,
+          teacherId: editValues.teacherId,
+          overviewVideos: editValues.overviewVideos,
+        });
         return GetCourses();
       });
       setCourseList(updatedCourses ?? []);
@@ -218,8 +218,7 @@ const CoursesTable = ({ updateCourseStats }) => {
           return (
             course.title?.toLowerCase().includes(searchTerm) ||
             course.description?.toLowerCase().includes(searchTerm) ||
-            teacherName.includes(searchTerm) ||
-            course.level?.toLowerCase().includes(searchTerm)
+            teacherName.includes(searchTerm)
           );
         }
       );
@@ -400,7 +399,6 @@ const CoursesTable = ({ updateCourseStats }) => {
                 <tr>
                   {[
                     "Title",
-                    "Level",
                     "Status",
                     "Teacher's Name",
                     "N° of Lessons",
@@ -424,7 +422,7 @@ const CoursesTable = ({ updateCourseStats }) => {
                     animate={{ opacity: 1 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {["title", "level", "active", "teacher"].map(
+                    {["title", "active", "teacher"].map(
                       (field) => (
                         <td key={field} className="px-6 py-4 whitespace-nowrap">
                           {field === "teacher" ? (

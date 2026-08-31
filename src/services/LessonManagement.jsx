@@ -1,49 +1,15 @@
 import { supabase } from "../lib/supabase";
+import {
+  saveLessonWithResources,
+  updateLessonWithResources,
+} from "./CourseContentManagement";
 
-const ensurePdfFile = (file) => {
-  if (!file || !(file instanceof File)) return;
-  const isPdfType = file.type === "application/pdf";
-  const isPdfExt = file.name.toLowerCase().endsWith(".pdf");
-  if (!isPdfType && !isPdfExt) {
-    throw new Error("Only PDF files are allowed for lessons.");
-  }
-};
-
-export const CreateLesson = async (
-  courseId,
-  lessonTitle,
-  lessonDescription,
-  lessonFile
-) => {
-  let fileUrl = null;
-  if (lessonFile && lessonFile instanceof File) {
-    ensurePdfFile(lessonFile);
-    const ext = lessonFile.name.split(".").pop();
-    const path = `${courseId}/${crypto.randomUUID()}.${ext}`;
-    const { error: uploadError } = await supabase.storage
-      .from("lesson-files")
-      .upload(path, lessonFile, { upsert: true });
-    if (!uploadError) {
-      const { data: urlData } = supabase.storage
-        .from("lesson-files")
-        .getPublicUrl(path);
-      fileUrl = urlData.publicUrl;
-    }
-  }
-
-  const { data, error } = await supabase
-    .from("lessons")
-    .insert({
-      course_id: courseId,
-      title: lessonTitle,
-      description: lessonDescription || null,
-      file_url: fileUrl,
-    })
-    .select()
-    .single();
-
-  if (error) throw new Error(error.message);
-  return data;
+export const CreateLesson = async (courseId, lessonTitle, lessonDescription, resources = []) => {
+  return saveLessonWithResources(courseId, {
+    title: lessonTitle,
+    description: lessonDescription,
+    resources,
+  });
 };
 
 export const DeleteLesson = async (lessonId) => {
@@ -52,40 +18,17 @@ export const DeleteLesson = async (lessonId) => {
   return { success: true };
 };
 
-export const EditLesson = async (lessonId, title, description, file) => {
-  const updates = {};
-  if (title != null) updates.title = title;
-  if (description != null) updates.description = description;
-
-  if (file && file instanceof File) {
-    ensurePdfFile(file);
-    const { data: lesson } = await supabase
-      .from("lessons")
-      .select("course_id")
-      .eq("id", lessonId)
-      .single();
-    if (lesson) {
-      const ext = file.name.split(".").pop();
-      const path = `${lesson.course_id}/${crypto.randomUUID()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from("lesson-files")
-        .upload(path, file, { upsert: true });
-      if (!uploadError) {
-        const { data: urlData } = supabase.storage
-          .from("lesson-files")
-          .getPublicUrl(path);
-        updates.file_url = urlData.publicUrl;
-      }
-    }
-  }
-
-  const { data, error } = await supabase
+export const EditLesson = async (lessonId, title, description, resources = []) => {
+  const { data: lesson } = await supabase
     .from("lessons")
-    .update(updates)
+    .select("course_id")
     .eq("id", lessonId)
-    .select()
     .single();
+  if (!lesson) throw new Error("Lesson not found");
 
-  if (error) throw new Error(error.message);
-  return data;
+  return updateLessonWithResources(lesson.course_id, lessonId, {
+    title,
+    description,
+    resources,
+  });
 };

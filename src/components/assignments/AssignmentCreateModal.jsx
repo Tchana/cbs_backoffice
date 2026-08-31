@@ -20,18 +20,19 @@ const _makeEmptyOpenPdfQuestion = () => ({
   points: 1,
 });
 
-const AssignmentCreateModal = ({
-  course,
-  lessons = [],
-  onClose,
-  onCreated,
-}) => {
+const _makeEmptyOpenDocQuestion = () => ({
+  id: crypto.randomUUID(),
+  type: "open_doc",
+  prompt: "",
+  points: 1,
+});
+
+const AssignmentCreateModal = ({ course, onClose, onCreated }) => {
   const runWithLoader = useApiLoader().runWithLoader;
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [published, setPublished] = useState(false);
-  const [lessonId, setLessonId] = useState(null);
   const [dueDate, setDueDate] = useState("");
   const [assignmentPdfFile, setAssignmentPdfFile] = useState(null);
 
@@ -53,11 +54,9 @@ const AssignmentCreateModal = ({
   }, [title, questions]);
 
   useEffect(() => {
-    // Reset when course changes
     setTitle("");
     setDescription("");
     setPublished(false);
-    setLessonId(null);
     setDueDate("");
     setAssignmentPdfFile(null);
     setQuestions([_makeEmptyMCQQuestion()]);
@@ -65,6 +64,12 @@ const AssignmentCreateModal = ({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const questionTypeLabel = (type) => {
+    if (type === "mcq_single") return "MCQ (single)";
+    if (type === "open_doc") return "Document upload";
+    return "PDF upload";
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,13 +82,12 @@ const AssignmentCreateModal = ({
     try {
       const payload = {
         courseId: course.id,
-        lessonId,
         title: title.trim(),
         description: description.trim() || null,
         published,
         dueDate: dueDate ? new Date(dueDate).toISOString() : null,
         assignmentPdfFile,
-        questions: questions.map((q, idx) => {
+        questions: questions.map((q) => {
           if (q.type === "mcq_single") {
             return {
               type: "mcq_single",
@@ -97,7 +101,7 @@ const AssignmentCreateModal = ({
           }
 
           return {
-            type: "open_pdf",
+            type: q.type,
             prompt: q.prompt.trim(),
             points: Number(q.points || 1),
           };
@@ -151,7 +155,7 @@ const AssignmentCreateModal = ({
             {error && <p className="text-red-400">{error}</p>}
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Title
                 </label>
@@ -161,24 +165,6 @@ const AssignmentCreateModal = ({
                   onChange={(e) => setTitle(e.target.value)}
                   required
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">
-                  Attach to Lesson (optional)
-                </label>
-                <select
-                  className="w-full px-3 py-2 bg-gray-700 text-white rounded-md"
-                  value={lessonId || ""}
-                  onChange={(e) => setLessonId(e.target.value || null)}
-                >
-                  <option value="">Course-level</option>
-                  {lessons.map((l) => (
-                    <option key={l.id} value={l.id}>
-                      {l.title}
-                    </option>
-                  ))}
-                </select>
               </div>
 
               <div className="md:col-span-2">
@@ -221,7 +207,7 @@ const AssignmentCreateModal = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-300 mb-1">
-                Optional prompt PDF (used by open_pdf questions)
+                Optional prompt PDF (used by PDF upload questions)
               </label>
               <div className="flex items-center gap-3">
                 <input
@@ -238,10 +224,8 @@ const AssignmentCreateModal = ({
 
             <div className="pt-4 border-t border-gray-600">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-semibold text-white">
-                  Questions
-                </h3>
-                <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-white">Questions</h3>
+                <div className="flex items-center gap-2 flex-wrap">
                   <button
                     type="button"
                     className="flex items-center gap-2 px-3 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600"
@@ -260,7 +244,17 @@ const AssignmentCreateModal = ({
                     }
                   >
                     <Plus size={16} />
-                    Open PDF
+                    PDF upload
+                  </button>
+                  <button
+                    type="button"
+                    className="flex items-center gap-2 px-3 py-2 bg-indigo-500 text-white rounded-md hover:bg-indigo-600"
+                    onClick={() =>
+                      setQuestions((qs) => [...qs, _makeEmptyOpenDocQuestion()])
+                    }
+                  >
+                    <Plus size={16} />
+                    Doc upload
                   </button>
                 </div>
               </div>
@@ -273,8 +267,7 @@ const AssignmentCreateModal = ({
                   >
                     <div className="flex items-start justify-between gap-4">
                       <div className="text-white font-medium">
-                        Question {qIdx + 1} —{" "}
-                        {q.type === "mcq_single" ? "MCQ (single)" : "Open PDF"}
+                        Question {qIdx + 1} — {questionTypeLabel(q.type)}
                       </div>
                       <button
                         type="button"
@@ -367,10 +360,7 @@ const AssignmentCreateModal = ({
 
                         <div className="space-y-2">
                           {(q.mcqOptions || []).map((o, oIdx) => (
-                            <div
-                              key={o.id}
-                              className="flex items-center gap-3"
-                            >
+                            <div key={o.id} className="flex items-center gap-3">
                               <button
                                 type="button"
                                 onClick={() => {
@@ -446,4 +436,3 @@ const AssignmentCreateModal = ({
 };
 
 export default AssignmentCreateModal;
-

@@ -12,8 +12,7 @@ function mapProfileToUser(row) {
     testimony: row.testimony || "",
     journey: row.journey || "",
     role: row.role || "teacher",
-    subscriptionType: row.subscription_type || "none",
-    schoolMaxLevel: row.school_max_level ?? 0,
+    resourceAccess: row.resource_access || "default",
     pImage: row.avatar_url,
     createdAt: row.created_at || null,
   };
@@ -65,7 +64,7 @@ export const lessons = async () => {
 export const GetUsers = async () => {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, subscription_type, school_max_level, avatar_url, created_at")
+    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, resource_access, avatar_url, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -84,8 +83,6 @@ export const editUser = async (
   role,
   phone,
   pImage,
-  subscriptionType,
-  schoolMaxLevel,
   vocation,
   testimony,
   journey
@@ -101,14 +98,6 @@ export const editUser = async (
   if (testimony !== undefined) updates.testimony = testimony || null;
   if (journey !== undefined) updates.journey = journey || null;
   if (role !== undefined) updates.role = role;
-  if (subscriptionType !== undefined) updates.subscription_type = subscriptionType;
-  if (schoolMaxLevel !== undefined) updates.school_max_level = Number(schoolMaxLevel) || 0;
-  if (updates.role === "student" && updates.school_max_level == null) {
-    updates.school_max_level = 1;
-    updates.subscription_type = "student";
-  } else if (updates.role === "library_user") {
-    updates.subscription_type = "library_user";
-  }
 
   const { error } = await supabase
     .from("profiles")
@@ -137,7 +126,7 @@ export const editUser = async (
 
   const { data } = await supabase
     .from("profiles")
-    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, subscription_type, school_max_level, avatar_url, created_at")
+    .select("id, email, first_name, last_name, phone, vocation, testimony, journey, role, resource_access, avatar_url, created_at")
     .eq("id", id)
     .single();
 
@@ -149,112 +138,4 @@ export const deleteUser = async (id) => {
 
   if (error) throw new Error(error.message);
   return { success: true };
-};
-
-export const GetUserSubscriptionStatus = async (userId) => {
-  const { data, error } = await supabase
-    .from("v_user_subscription_status")
-    .select("*")
-    .eq("user_id", userId)
-    .maybeSingle();
-  if (error) throw new Error(error.message);
-  return data || null;
-};
-
-export const GetUserSubscriptionHistory = async (userId) => {
-  const { data, error } = await supabase
-    .from("user_subscriptions")
-    .select("id,status,source,starts_at,ends_at,access_state,access_state_note,created_at,plan:subscription_plans(code,name,target_role,duration_months),payment:payment_transactions(provider_tx_ref,provider_status,amount,currency),installments:user_subscription_installments(id,installment_number,label,amount_due,amount_paid,currency,due_at,paid_at,status)")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
-  if (error) throw new Error(error.message);
-  return data || [];
-};
-
-export const CreateManualSubscription = async ({
-  userId,
-  planCode,
-  startsAt,
-  endsAt,
-  reason,
-}) => {
-  const { data: plan, error: planError } = await supabase
-    .from("subscription_plans")
-    .select("id,duration_months")
-    .eq("code", planCode)
-    .single();
-  if (planError) throw new Error(planError.message);
-
-  const start = startsAt ? new Date(startsAt) : new Date();
-  const end = endsAt
-    ? new Date(endsAt)
-    : new Date(start.getTime() + Number(plan.duration_months || 3) * 30 * 24 * 3600 * 1000);
-
-  const {
-    data: { user: actor },
-  } = await supabase.auth.getUser();
-
-  const nowIso = new Date().toISOString();
-  await supabase
-    .from("user_subscriptions")
-    .update({ status: "cancelled", updated_at: nowIso })
-    .eq("user_id", userId)
-    .eq("status", "active")
-    .gte("ends_at", nowIso);
-
-  const { data, error } = await supabase
-    .from("user_subscriptions")
-    .insert({
-      user_id: userId,
-      plan_id: plan.id,
-      source: "backoffice_manual",
-      status: "active",
-      starts_at: start.toISOString(),
-      ends_at: end.toISOString(),
-      created_by: actor?.id || null,
-    })
-    .select("*")
-    .single();
-  if (error) throw new Error(error.message);
-
-  await supabase
-    .from("user_subscriptions")
-    .update({
-      access_state: "full",
-      access_state_note: reason || null,
-      access_state_updated_at: new Date().toISOString(),
-    })
-    .eq("id", data.id);
-
-  await supabase.rpc("apply_subscription_entitlement", { p_user_id: userId });
-
-  return { ...data, reason: reason || null };
-};
-
-export const SetUserSubscriptionAccessState = async ({
-  subscriptionId,
-  accessState,
-  note,
-}) => {
-  const { error } = await supabase.rpc("set_subscription_access_state", {
-    p_subscription_id: subscriptionId,
-    p_access_state: accessState,
-    p_note: note || null,
-  });
-  if (error) throw new Error(error.message);
-  return { success: true };
-};
-
-export const GetSubscriptionPaymentsEnabled = async () => {
-  const { data, error } = await supabase.rpc("subscription_payments_enabled");
-  if (error) throw new Error(error.message);
-  return data === true;
-};
-
-export const SetSubscriptionPaymentsEnabled = async (enabled) => {
-  const { error } = await supabase.rpc("set_subscription_payments_enabled", {
-    p_enabled: !!enabled,
-  });
-  if (error) throw new Error(error.message);
-  return { enabled: !!enabled };
 };

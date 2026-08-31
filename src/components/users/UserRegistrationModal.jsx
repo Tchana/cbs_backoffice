@@ -220,29 +220,6 @@ const UserRegistrationModal = ({
                   {isEdit && <option value="admin">admin</option>}
                 </select>
               </div>
-              <div>
-                <label className="text-gray-400 text-sm">School Max Level</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={editValues.schoolMaxLevel ?? 0}
-                  onChange={(e) => handleInputChange(e, "schoolMaxLevel")}
-                  disabled={(editValues.role || "student") !== "student"}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                />
-              </div>
-              <div className="col-span-2">
-                <label className="text-gray-400 text-sm">Subscription Type</label>
-                <select
-                  value={editValues.subscriptionType || "none"}
-                  onChange={(e) => handleInputChange(e, "subscriptionType")}
-                  className="w-full bg-gray-700 text-white rounded-lg px-3 py-2 mt-1 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="none">none</option>
-                  <option value="library_user">library_user</option>
-                  <option value="student">student</option>
-                </select>
-              </div>
             </div>
 
             {/* Register Button */}

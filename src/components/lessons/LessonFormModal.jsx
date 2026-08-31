@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, FileText, X } from "lucide-react";
+import { BookOpen, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useEffect } from "react";
+import LessonResourcesEditor from "../courses/LessonResourcesEditor";
 
 const inputClass =
   "w-full rounded-lg border border-gray-600 bg-gray-700 px-4 py-3 text-sm text-gray-100 placeholder:text-gray-500 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500";
@@ -11,6 +12,7 @@ const LessonFormModal = ({
   onSubmit,
   formValues,
   handleInputChange,
+  setFormValues,
   allCourses = [],
   title = "Create lesson",
   submitLabel = "Create lesson",
@@ -24,17 +26,12 @@ const LessonFormModal = ({
     };
   }, []);
 
-  const existingFileUrl =
-    typeof formValues.file === "string" && formValues.file
-      ? formValues.file
-      : formValues.fileUrl || null;
-  const pickedFileName =
-    formValues.file instanceof File ? formValues.file.name : null;
-
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit();
   };
+
+  const resources = formValues.resources || [];
 
   return createPortal(
     <AnimatePresence>
@@ -73,8 +70,8 @@ const LessonFormModal = ({
                 </h2>
                 <p className="mt-1 text-sm text-gray-400">
                   {isEdit
-                    ? "Update lesson details and optionally replace the PDF."
-                    : "Add a new lesson to a course."}
+                    ? "Update lesson details and resources."
+                    : "Add a new lesson with multiple resources."}
                 </p>
               </div>
               <button
@@ -147,36 +144,15 @@ const LessonFormModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-2">
-                  Lesson PDF{isEdit ? " (optional)" : ""}
+                  Resources
                 </label>
-                {isEdit && existingFileUrl && !pickedFileName ? (
-                  <div className="mb-3 flex items-start gap-3 rounded-lg border border-gray-700/80 bg-gray-900/40 p-3">
-                    <FileText size={18} className="mt-0.5 shrink-0 text-indigo-400" />
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-gray-300">Current file attached</p>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          window.open(existingFileUrl, "_blank", "noopener,noreferrer")
-                        }
-                        className="mt-1 text-sm text-indigo-400 hover:text-indigo-300 underline truncate block max-w-full text-left"
-                      >
-                        Open current PDF
-                      </button>
-                    </div>
-                  </div>
-                ) : null}
-                <input
-                  type="file"
-                  accept=".pdf,application/pdf"
-                  className="w-full text-sm text-gray-300 file:mr-3 file:rounded-md file:border-0 file:bg-indigo-600 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-indigo-500"
-                  onChange={(e) => handleInputChange(e, "file")}
+                <LessonResourcesEditor
+                  resources={resources}
+                  onChange={(next) =>
+                    setFormValues?.({ ...formValues, resources: next }) ||
+                    handleInputChange({ target: { value: next } }, "resources")
+                  }
                 />
-                {pickedFileName ? (
-                  <p className="mt-2 text-sm text-gray-400">
-                    Selected: {pickedFileName}
-                  </p>
-                ) : null}
               </div>
             </div>
 

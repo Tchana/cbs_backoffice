@@ -90,14 +90,6 @@ const StudentViewModal = ({ user, onClose }) => {
                 <p className="text-gray-400 text-sm">
                   Member since: {new Date(user.createdAt).toLocaleDateString()}
                 </p>
-                <div>
-                  <label className="text-gray-400 text-sm block">
-                    School access level
-                  </label>
-                  <p className="text-white">
-                    Level {user.schoolMaxLevel ?? 0}
-                  </p>
-                </div>
               </div>
             </div>
           </div>

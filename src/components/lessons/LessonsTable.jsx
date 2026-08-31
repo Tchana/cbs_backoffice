@@ -80,7 +80,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
       course: "",
       title: "",
       description: "",
-      file: null,
+      resources: [],
     });
   };
 
@@ -103,7 +103,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
           formValues.course,
           formValues.title,
           formValues.description,
-          formValues.file || null
+          formValues.resources || []
         )
       );
       const newLessons = await fetchLessons();
@@ -123,25 +123,22 @@ const LessonsTable = ({ updateLessonsStats }) => {
       courseTitle: lesson.courseTitle,
       title: lesson.title ?? "",
       description: lesson.description ?? "",
-      file: lesson.file || null,
-      fileUrl: lesson.file || lesson.file_url || null,
+      resources: (lesson.resources || []).map((r) => ({
+        id: r.id || crypto.randomUUID(),
+        resourceType: r.resourceType || r.resource_type,
+        title: r.title || "",
+        url: r.url || "",
+        sourceKind: r.sourceKind || r.source_kind || "external",
+        file: null,
+      })),
     });
   };
 
   const handleInputChange = (e, field) => {
-    if (field === "file") {
-      const file = e.target.files?.[0];
-      if (!file) return;
-      const isPdfType = file.type === "application/pdf";
-      const isPdfExt = file.name.toLowerCase().endsWith(".pdf");
-      if (!isPdfType && !isPdfExt) {
-        alert("Only PDF files are allowed.");
-        e.target.value = "";
-        return;
-      }
-      setFormValues((prev) => ({ ...prev, [field]: file }));
-    } else if (field === "course") {
+    if (field === "course") {
       setFormValues((prev) => ({ ...prev, course: e.target.value }));
+    } else if (field === "resources") {
+      setFormValues((prev) => ({ ...prev, resources: e.target.value }));
     } else {
       setFormValues((prev) => ({ ...prev, [field]: e.target.value }));
     }
@@ -151,14 +148,12 @@ const LessonsTable = ({ updateLessonsStats }) => {
     if (!editingLessonId) return;
     try {
       setIsSaving(true);
-      const fileToUpload =
-        formValues.file instanceof File ? formValues.file : null;
       await runWithLoader(() =>
         EditLesson(
           editingLessonId,
           formValues.title,
           formValues.description,
-          fileToUpload
+          formValues.resources || []
         )
       );
       const newLessons = await fetchLessons();
@@ -268,6 +263,7 @@ const LessonsTable = ({ updateLessonsStats }) => {
               editingLessonId ? handleConfirmEdit : handleConfirmRegistration
             }
             formValues={formValues}
+            setFormValues={setFormValues}
             handleInputChange={handleInputChange}
             allCourses={allCourses}
             title={editingLessonId ? "Edit lesson" : "Create lesson"}
