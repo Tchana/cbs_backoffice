@@ -247,6 +247,7 @@ function AuthPage() {
         <Components.OverlayContainer $signIn={signIn}>
           <Components.Overlay $signIn={signIn}>
             <Components.LeftOverlayPanel $signIn={signIn}>
+              <img src="/cbs-logo.png" alt="Center for Biblical Studies" style={{ width: 200, maxWidth: "80%", marginBottom: 16 }} />
               <Components.Title>Hello, Friend!</Components.Title>
               <Components.Paragraph>
                 Enter Your personal details and start journey with us
@@ -257,6 +258,7 @@ function AuthPage() {
             </Components.LeftOverlayPanel>
 
             <Components.RightOverlayPanel $signIn={signIn}>
+              <img src="/cbs-logo.png" alt="Center for Biblical Studies" style={{ width: 200, maxWidth: "80%", marginBottom: 16 }} />
               <Components.Title>Welcome Back!</Components.Title>
               <Components.Paragraph>
                 To keep connected with us please login with your personal info

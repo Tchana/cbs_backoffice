@@ -117,6 +117,14 @@ const Sidebar = () => {
           <Menu size={24} />
         </motion.button>
 
+        <Link to="/overview" className="mt-4 flex justify-center">
+          <img
+            src={isSidebarOpen ? "/cbs-logo.png" : "/cbs-emblem.png"}
+            alt="Center for Biblical Studies"
+            className={isSidebarOpen ? "w-40" : "w-12"}
+          />
+        </Link>
+
         <div className="mt-8 flex-grow min-h-0 relative">
           <nav
             ref={navRef}
